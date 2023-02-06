@@ -2,7 +2,7 @@ conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
   detects <- which(!is.nan(cqs))
   num_non_detects <- length(cqs) - length(detects)
   cqs <- cqs[detects]
-  N0max <- N0min <- round(exp(mean(cqs) - intercept)/slope)
+  N0max <- N0min <- max(round(exp(mean(cqs) - intercept)/slope), 1)
   gen_norm_densities <- function(N0) {
     dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   }
@@ -10,7 +10,7 @@ conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
   function(concentration) {
     if(concentration < 0) {return(0)}
     N0start <- max(qpois(1E-15, concentration), 1)
-    N0end <- qpois(1E-15, concentration, lower.tail = FALSE)
+    N0end <- max(qpois(1E-15, concentration, lower.tail = FALSE), 2)
     if (N0start < N0min) {
       norm_densities <<- cbind(sapply(N0start:(N0min - 1), gen_norm_densities),
                                norm_densities)
@@ -64,8 +64,8 @@ conc_mle <- function(cqs, model) {
 #' @param model esc object representing fitted model to use for estimation
 #' @param level Desired credibily level, defaults to 0.95
 #'
-#' @return Numeric vector specifying the lower and upper bounds of desired
-#' credible interval
+#' @return List specifying the lower and upper bounds of desired credible
+#' interval, as well as the maximum likelihood concentration estimate
 #' @export
 #'
 #' @examples
@@ -78,7 +78,7 @@ conc_interval <- function(cqs, model, level = 0.95) {
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(all(is.nan(cqs))) {
-    return(c(0, -log(1 - level)/length(cqs)))
+    return(list(lower = 0, mle = 0, upper = -log(1 - level)/length(cqs)))
   }
   conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
                                              model$sigma)
@@ -95,5 +95,6 @@ conc_interval <- function(cqs, model, level = 0.95) {
   cdf <- cumsum(pdf)
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
   bounds <- findInterval(limits, cdf) + 1
-  grid[bounds] + (0.5 - (cdf[bounds] - limits)/pdf[bounds]) * (ub - lb) / 1000
+  interval <- grid[bounds] + (0.5 - (cdf[bounds] - limits)/pdf[bounds]) * (ub - lb) / 1000
+  list(lower = interval[1], mle = mle, upper = interval[2])
 }

@@ -14,7 +14,7 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 }
 
 esc_log_likelihood <- function(params, concentrations, cqs) {
-  if(params[3] < 0) {return(1E100)}
+  if(params[3] < 0) {return(Inf)}
   -sum(log(esc_probdens(concentrations, cqs, params[1], params[2], params[3])))
 }
 

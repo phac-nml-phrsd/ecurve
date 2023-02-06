@@ -23,7 +23,7 @@ sim_cqs <- function(concentrations, eff, cq1, sigma){
   if(!is.finite(eff) | eff < 0) {stop("invalid efficiency ", eff, " provided")}
   if(!is.finite(cq1)) {stop("invalid intercept ", cq1, " provided")}
   if(!is.finite(sigma) | sigma < 0) {stop("invalid sigma ", sigma, " provided")}
-  if(efficiency > 1) {warning("efficiency greate than 1 provided")}
+  if(eff > 1) {warning("efficiency greater than 1 provided")}
   if(cq1 < 0) {warning("negative intercept provided")}
   N0s <- rpois(length(concentrations), concentrations)
   detects <- which(N0s > 0)
