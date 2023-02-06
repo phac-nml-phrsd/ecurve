@@ -29,6 +29,17 @@ esc_log_likelihood <- function(params, concentrations, cqs) {
 #'
 #' @examples
 esc_mle <- function(concentrations, cqs) {
+  if(!all(is.numeric(concentrations))) {stop("concentrations must be numeric")}
+  if(!all(concentrations >= 0 & is.finite(concentrations))) {
+    stop("concentrations must be non-negative real numbers")
+  }
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(length(concentrations) != length(cqs)) {
+    stop("concentrations and cqs must be the same length")
+  }
   detects <- !is.nan(cqs)
   concentrations <- concentrations[detects]
   cqs <- cqs[detects]

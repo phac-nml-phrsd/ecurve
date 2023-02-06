@@ -41,6 +41,11 @@ conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
 #'
 #' @examples
 conc_mle <- function(cqs, model) {
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
   if(all(is.nan(cqs))) {return(0)}
   conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
                                              model$sigma)
@@ -59,12 +64,19 @@ conc_mle <- function(cqs, model) {
 #' @param model esc object representing fitted model to use for estimation
 #' @param level Desired credibily level, defaults to 0.95
 #'
-#' @return nNumeric vector specifying the lower and upper bounds of desired
+#' @return Numeric vector specifying the lower and upper bounds of desired
 #' credible interval
 #' @export
 #'
 #' @examples
 conc_interval <- function(cqs, model, level = 0.95) {
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(all(is.nan(cqs))) {
     return(c(0, -log(1 - level)/length(cqs)))
   }
