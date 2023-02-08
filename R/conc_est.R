@@ -64,8 +64,10 @@ conc_mle <- function(cqs, model) {
 #' @param model esc object representing fitted model to use for estimation
 #' @param level Desired credibily level, defaults to 0.95
 #'
-#' @return List specifying the lower and upper bounds of desired credible
-#' interval, as well as the maximum likelihood concentration estimate
+#' @return conc_int object, containing a list interval specifying the lower and
+#' upper bounds of desired credible interval, as well as the maximum likelihood
+#' concentration estimate, and a data frame distribution, containing values of
+#' the pdf and cdf of the posterior distribution evaluated at specified points
 #' @export
 #'
 #' @examples
@@ -78,7 +80,11 @@ conc_interval <- function(cqs, model, level = 0.95) {
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(all(is.nan(cqs))) {
-    return(list(lower = 0, mle = 0, upper = -log(1 - level)/length(cqs)))
+    n <- length(cqs)
+    grid <- seq(from = 0, to = log(10) * 9 / n, length.out = 1001)
+    return(new_conc_int(mle = 0, interval = c(0, -log(1 - level)/n), grid = grid,
+                        pdf = sapply(grid, function(x) {n * exp(-x * n)}),
+                        cdf = sapply(grid, function(x) {1 - exp(-x * n)})))
   }
   conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
                                              model$sigma)
@@ -92,9 +98,9 @@ conc_interval <- function(cqs, model, level = 0.95) {
   lb <- max(lb, ub/2001)
   grid <- seq(lb, ub, length.out = 1001)
   pdf <- sapply(grid, conc_likelihood)
-  cdf <- cumsum(pdf)
+  cdf <- cumsum(pdf) * (ub - lb) / 1000
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
   bounds <- findInterval(limits, cdf) + 1
   interval <- grid[bounds] + (0.5 - (cdf[bounds] - limits)/pdf[bounds]) * (ub - lb) / 1000
-  list(lower = interval[1], mle = mle, upper = interval[2])
+  new_conc_int(mle, interval, grid, pdf, cdf)
 }
