@@ -15,8 +15,8 @@ coded as NaN}
 \item{level}{Desired credibily level, defaults to 0.95}
 }
 \value{
-nNumeric vector specifying the lower and upper bounds of desired
-credible interval
+List specifying the lower and upper bounds of desired credible
+interval, as well as the maximum likelihood concentration estimate
 }
 \description{
 Given list of Cq values from a set of technical replicates and fitted ESC
