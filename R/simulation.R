@@ -12,8 +12,14 @@
 #' @export
 #'
 #' @examples
+#'
 sim_cqs <- function(concentrations, eff, cq1, sigma){
-  if(!all(is.numeric(concentrations))) {stop("concentrations must be numeric")}
+
+  # --- Inputs checks
+
+  if(!all(is.numeric(concentrations))) {
+    stop("concentrations must be numeric")
+  }
   if(!all(concentrations >= 0 & is.finite(concentrations))) {
     stop("concentrations must be non-negative real numbers")
   }
@@ -25,10 +31,14 @@ sim_cqs <- function(concentrations, eff, cq1, sigma){
   if(!is.finite(sigma) | sigma < 0) {stop("invalid sigma ", sigma, " provided")}
   if(eff > 1) {warning("efficiency greater than 1 provided")}
   if(cq1 < 0) {warning("negative intercept provided")}
+
+  # --- Simulate Cq values
+
   N0s <- rpois(length(concentrations), concentrations)
   detects <- which(N0s > 0)
   cqs <- rep(NaN, length(N0s))
-  cqs[detects] <- rnorm(length(detects), mean = cq1 - log(N0s[detects])/log(1 + eff),
+  cqs[detects] <- rnorm(length(detects),
+                        mean = cq1 - log(N0s[detects])/log(1 + eff),
                         sd = sigma)
-  cqs
+  return(cqs)
 }
