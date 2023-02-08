@@ -71,13 +71,15 @@ plot_esc_model <- function(plot, model, level = 0.95) {
   plot <- plot +
     ggplot2::geom_function(fun = cq_quantile_factory(0.5, model$intercept,
                                                      model$slope, model$sigma),
-                           color = "red") +
+                           ggplot2::aes(color = "Median")) +
     ggplot2::geom_function(fun = cq_quantile_factory((1 - level)/2, model$intercept,
                                                      model$slope, model$sigma),
-                           color = "blue") +
+                           ggplot2::aes(color = "Interval")) +
     ggplot2::geom_function(fun = cq_quantile_factory(1 - (1 - level)/2, model$intercept,
                                                      model$slope, model$sigma),
-                           color = "blue")
+                           ggplot2::aes(color = "Interval")) +
+    ggplot2::scale_color_manual(name = "Legend",
+                                values = c("Median" = "red", "Interval" = "blue"))
   print(plot)
   plot
 }

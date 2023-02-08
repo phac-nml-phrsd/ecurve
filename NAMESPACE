@@ -3,7 +3,7 @@
 export(conc_interval)
 export(conc_mle)
 export(esc_mle)
+export(plot_conc_int)
 export(plot_esc_data)
 export(plot_esc_model)
 export(sim_cqs)
-importFrom(ggplot2,"+")
