@@ -15,8 +15,10 @@ coded as NaN}
 \item{level}{Desired credibily level, defaults to 0.95}
 }
 \value{
-List specifying the lower and upper bounds of desired credible
-interval, as well as the maximum likelihood concentration estimate
+conc_int object, containing a list interval specifying the lower and
+upper bounds of desired credible interval, as well as the maximum likelihood
+concentration estimate, and a data frame distribution, containing values of
+the pdf and cdf of the posterior distribution evaluated at specified points
 }
 \description{
 Given list of Cq values from a set of technical replicates and fitted ESC
