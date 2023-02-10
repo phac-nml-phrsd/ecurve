@@ -1,32 +1,16 @@
-#' Title
+#' Calculate cq PDFs under ESC Model
 #'
-#' @param params
-#' @param N0s
-#' @param mean_cqs
-#' @param sigma
+#' Given ESC model parameters and vector of specified concentrations, calculates
+#' ESC PDF for given Cq values (one for each concentration)
 #'
-#' @return
-probdens <- function(params, N0s, mean_cqs, sigma) {
-
-  tmp1 = dpois(x      = N0s[params[3]:params[4]],
-               lambda = params[1])
-
-  tmp2 = dnorm(x    = params[2],
-               mean = mean_cqs[params[3]:params[4]],
-               sd   = sigma)
-
-  return( sum( tmp1 * tmp2 ) )
-}
-
-#' Title
+#' @param concentrations numeric vector of specified concentrations
+#' @param cqs numeric vector containing Cq value at which to compute pdf for
+#' each specificed concentration, with non-detects coded as NaN
+#' @param intercept intercept parameter of ESC model
+#' @param slope slope parameter of ESC model
+#' @param sigma sigma parameter of ESC model
 #'
-#' @param concentrations
-#' @param cqs
-#' @param intercept
-#' @param slope
-#' @param sigma
-#'
-#' @return
+#' @return numeric vector of calculated pdf values
 #'
 esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 
@@ -39,32 +23,41 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
   N0max    <- max(N0ends)
   N0s      <- N0min:N0max
   mean_cqs <- intercept + slope * log(N0s)
+  probdens <- function(conc, cq, N0start, N0end) {
 
-  X = cbind(concentrations, cqs, N0starts - N0min + 1, N0ends - N0min + 1)
+    tmp1 <- dpois(x      = N0s[N0start:N0end],
+                 lambda = conc)
 
-  res = apply(X,
-              FUN = probdens,
-              MARGIN = 1,
-              N0s = N0s, mean_cqs = mean_cqs, sigma = sigma)
+    tmp2 <- dnorm(x    = cq,
+                 mean = mean_cqs[N0start:N0end],
+                 sd   = sigma)
+
+    return( sum( tmp1 * tmp2 ) )
+  }
+  res <- mapply(probdens, conc = concentrations, cq = cqs,
+                N0start = N0starts - N0min + 1, N0end = N0ends - N0min + 1)
   return(res)
 }
 
-#' Title
+#' Log Likelihood function for ESC Modle fitting
 #'
-#' @param params
-#' @param concentrations
-#' @param cqs
+#' @param params  numeric vector containing parameters of the model: first
+#' element is intercept, second is slope and third is sigma
+#' @param concentrations numeric vector of concentrations that model is being
+#' fit to
+#' @param cqs numeric vector containing Cq value for each specified concentration,
+#' with non-detects coded as NaN
 #'
-#' @return
+#' @return negative log likelihood evalueated at the given parameters
 #'
 esc_log_likelihood <- function(params, concentrations, cqs) {
   if(params[3] < 0) {return(Inf)}
 
-  tmp = esc_probdens(concentrations, cqs,
+  tmp <- esc_probdens(concentrations, cqs,
                      intercept = params[1],
                      slope = params[2],
                      sigma = params[3])
-  res = -sum(log(tmp))
+  res <- -sum(log(tmp))
   return(res)
 }
 

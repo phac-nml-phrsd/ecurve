@@ -1,3 +1,22 @@
+#' Generate New conc_int Object
+#'
+#' Creates new object of class conc_int, containing a list specifying the upper
+#' and lower endpoints of the credible interval and the MLE concentration
+#' estimate, as well as a data frame containing the PDF and CDF of posterior
+#' concentration distribution evaluated at a grid of points
+#'
+#' @param mle MLE estimate of concentration
+#' @param interval Numeric vector representing credible interval: first element
+#' is the lower endpoint, second is the upper endpoint
+#' @param grid Numeric vector containing grid of value at with PDF/CDF were
+#' evaluated
+#' @param pdf Numeric vector of PDF values evaluated at each point in grid
+#' @param cdf Numeric vector of CDF values evaluated at each point in grid
+#'
+#' @return Object of class conc_int
+#'
+#' @examples
+#'
 new_conc_int <- function(mle, interval, grid, pdf, cdf) {
   norm_factor <- cdf[length(cdf)]
   structure(list(

@@ -1,10 +1,13 @@
-#' Title
+#' Create New esc Object
 #'
-#' @param intercept
-#' @param slope
-#' @param sigma
+#' Creates new object of class esc, representing ESC model as a list containing
+#' intercept, slope and sigma parameters, as well as the calculated efficiency
 #'
-#' @return
+#' @param intercept intercept parameter of ESC model
+#' @param slope slope parameter of ESC model
+#' @param sigma sigma parameter of ESC model
+#'
+#' @return Object of class esc
 #'
 #' @examples
 #'

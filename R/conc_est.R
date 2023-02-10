@@ -1,3 +1,15 @@
+#' Factory Function to Create Concentration Likelihood Function
+#'
+#' Given ESC Model parameters and observed Cq data, returns function implementing
+#' likelihood calculation for concentration estimation
+#'
+#' @param cqs Numeric vector of observed Cq values, with non-detects coded as NaN
+#' @param intercept intercept parameter of ESC model
+#' @param slope slope parameter of ESC model
+#' @param sigma sigma parameter of ESC model
+#'
+#' @return Function that takes single input concentration and returns
+#' corresponding likelihhod
 conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
   detects <- which(!is.nan(cqs))
   num_non_detects <- length(cqs) - length(detects)
@@ -41,12 +53,16 @@ conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
 #'
 #' @examples
 conc_mle <- function(cqs, model) {
+
+  #Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
   if(class(model) != "esc") {stop("model is not an esc object")}
   if(all(is.nan(cqs))) {return(0)}
+
+  #Compute MLE
   conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
                                              model$sigma)
   nlm(function(conc) {-log(conc_likelihood(conc))},
@@ -72,6 +88,8 @@ conc_mle <- function(cqs, model) {
 #'
 #' @examples
 conc_interval <- function(cqs, model, level = 0.95) {
+
+  #Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
@@ -79,6 +97,8 @@ conc_interval <- function(cqs, model, level = 0.95) {
   if(class(model) != "esc") {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+
+  #Deal with case of all non-detects seperately
   if(all(is.nan(cqs))) {
     n <- length(cqs)
     grid <- seq(from = 0, to = log(10) * 9 / n, length.out = 1001)
@@ -86,19 +106,27 @@ conc_interval <- function(cqs, model, level = 0.95) {
                         pdf = sapply(grid, function(x) {n * exp(-x * n)}),
                         cdf = sapply(grid, function(x) {1 - exp(-x * n)})))
   }
+
+  #Compute MLE
   conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
                                              model$sigma)
   mle <- nlm(function(conc) {-log(conc_likelihood(conc))},
              exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope))$estimate
+
+  #Compute bounds for numerical intergration
   threshold <- conc_likelihood(mle) / 1E9
   lb <- uniroot(function(conc) {conc_likelihood(conc) - threshold}, lower = 0,
                 upper = mle)$root
   ub <- uniroot(function(conc) {conc_likelihood(conc) - threshold}, lower = mle,
                 upper = 2 * mle, extendInt = "downX")$root
   lb <- max(lb, ub/2001)
+
+  #Perform numerical integration
   grid <- seq(lb, ub, length.out = 1001)
   pdf <- sapply(grid, conc_likelihood)
   cdf <- cumsum(pdf) * (ub - lb) / 1000
+
+  #Construct and return interval
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
   bounds <- findInterval(limits, cdf) + 1
   interval <- grid[bounds] + (0.5 - (cdf[bounds] - limits)/pdf[bounds]) * (ub - lb) / 1000
