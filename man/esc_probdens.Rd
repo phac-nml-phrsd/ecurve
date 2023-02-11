@@ -2,13 +2,26 @@
 % Please edit documentation in R/esc_mle.R
 \name{esc_probdens}
 \alias{esc_probdens}
-\title{Title}
+\title{Calculate cq PDFs under ESC Model}
 \usage{
 esc_probdens(concentrations, cqs, intercept, slope, sigma)
 }
 \arguments{
-\item{sigma}{}
+\item{concentrations}{numeric vector of specified concentrations}
+
+\item{cqs}{numeric vector containing Cq value at which to compute pdf for
+each specificed concentration, with non-detects coded as NaN}
+
+\item{intercept}{intercept parameter of ESC model}
+
+\item{slope}{slope parameter of ESC model}
+
+\item{sigma}{sigma parameter of ESC model}
+}
+\value{
+numeric vector of calculated pdf values
 }
 \description{
-Title
+Given ESC model parameters and vector of specified concentrations, calculates
+ESC PDF for given Cq values (one for each concentration)
 }

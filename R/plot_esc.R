@@ -36,36 +36,36 @@ plot_esc_data <- function(concentrations, cqs) {
   plot
 }
 
-#' Factory Function for Generating Cq Quantile Function
+#' Calculate Theoretical Quantiles for Cq Values
 #'
-#' Given ESC model parameters and quantile level alpha, returns function giving
-#' corresponding theoretical quantile of Cq values as a function of concentration
+#' Given ESC model parameters, quantile level alpha, and vector of concentrations
+#' evaluates that alpha-th quantile of the theoretical distribution of cq values
+#' at each of the specified concentrations
 #'
+#' @param concentrations numeric vector of concentrations at which to evaluate
+#' specified quantile
 #' @param alpha quantile level
 #' @param intercept intercept parameter of ESC model
 #' @param slope slope parameter of ESC model
 #' @param sigma sigma parameter of ESC model
 #'
-#' @return Function taking single input concentration and returning corresponding
-#' Cq qunatile
-cq_quantile_factory <- function(alpha, intercept, slope, sigma) {
-  function(concentrations) {
-    N0starts <- pmax(qpois(1E-15, concentrations), 1)
-    N0ends <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0starts + 1)
-    N0min <- min(N0starts)
-    N0max <- max(N0ends)
-    N0s <- N0min:N0max
-    means <- intercept + slope * log(N0s)
-    cq_quantile <- function(conc, N0start, N0end) {
-      uniroot(function(cq) {
-        sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
-              dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
-                lower = qnorm(alpha, mean = means[N0end], sd = sigma),
-                upper = qnorm(alpha, mean = means[N0start], sd = sigma))$root
-    }
-    mapply(cq_quantile, conc = concentrations, N0start = N0starts - N0min + 1,
-           N0end = N0ends - N0min + 1)
+#' @return Numeric vector containing the calculated quantiles
+cq_quantile <- function(concentrations, alpha, intercept, slope, sigma) {
+  N0starts <- pmax(qpois(1E-15, concentrations), 1)
+  N0ends <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0starts + 1)
+  N0min <- min(N0starts)
+  N0max <- max(N0ends)
+  N0s <- N0min:N0max
+  means <- intercept + slope * log(N0s)
+  quant <- function(conc, N0start, N0end) {
+    uniroot(function(cq) {
+      sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
+            dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
+              lower = qnorm(alpha, mean = means[N0end], sd = sigma),
+              upper = qnorm(alpha, mean = means[N0start], sd = sigma))$root
   }
+  mapply(quant, conc = concentrations, N0start = N0starts - N0min + 1,
+          N0end = N0ends - N0min + 1)
 }
 
 #' Plot Fitted ESC Model
@@ -90,14 +90,23 @@ plot_esc_model <- function(plot, model, level = 0.95) {
 
   #Modify plot
   plot <- plot +
-    ggplot2::geom_function(fun = cq_quantile_factory(0.5, model$intercept,
-                                                     model$slope, model$sigma),
+    ggplot2::geom_function(fun = cq_quantile,
+                           args = list(alpha = 0.5,
+                                       intercept = model$intercept,
+                                       slope = model$slope,
+                                       sigma = model$sigma),
                            ggplot2::aes(color = "Median")) +
-    ggplot2::geom_function(fun = cq_quantile_factory((1 - level)/2, model$intercept,
-                                                     model$slope, model$sigma),
+    ggplot2::geom_function(fun = cq_quantile,
+                           args = list(alpha = (1 - level)/2,
+                                       intercept = model$intercept,
+                                       slope = model$slope,
+                                       sigma = model$sigma),
                            ggplot2::aes(color = "Interval")) +
-    ggplot2::geom_function(fun = cq_quantile_factory(1 - (1 - level)/2, model$intercept,
-                                                     model$slope, model$sigma),
+    ggplot2::geom_function(fun = cq_quantile,
+                           args = list(alpha = 1 - (1 - level)/2,
+                                       intercept = model$intercept,
+                                       slope = model$slope,
+                                       sigma = model$sigma),
                            ggplot2::aes(color = "Interval")) +
     ggplot2::scale_color_manual(name = "Legend",
                                 values = c("Median" = "red", "Interval" = "blue"))

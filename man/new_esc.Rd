@@ -2,13 +2,21 @@
 % Please edit documentation in R/esc_class.R
 \name{new_esc}
 \alias{new_esc}
-\title{Title}
+\title{Create New esc Object}
 \usage{
 new_esc(intercept, slope, sigma)
 }
 \arguments{
-\item{sigma}{}
+\item{intercept}{intercept parameter of ESC model}
+
+\item{slope}{slope parameter of ESC model}
+
+\item{sigma}{sigma parameter of ESC model}
+}
+\value{
+Object of class esc
 }
 \description{
-Title
+Creates new object of class esc, representing ESC model as a list containing
+intercept, slope and sigma parameters, as well as the calculated efficiency
 }

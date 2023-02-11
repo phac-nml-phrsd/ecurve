@@ -2,13 +2,23 @@
 % Please edit documentation in R/esc_mle.R
 \name{esc_log_likelihood}
 \alias{esc_log_likelihood}
-\title{Title}
+\title{Log Likelihood function for ESC Modle fitting}
 \usage{
 esc_log_likelihood(params, concentrations, cqs)
 }
 \arguments{
-\item{cqs}{}
+\item{params}{numeric vector containing parameters of the model: first
+element is intercept, second is slope and third is sigma}
+
+\item{concentrations}{numeric vector of concentrations that model is being
+fit to}
+
+\item{cqs}{numeric vector containing Cq value for each specified concentration,
+with non-detects coded as NaN}
+}
+\value{
+negative log likelihood evalueated at the given parameters
 }
 \description{
-Title
+Log Likelihood function for ESC Modle fitting
 }
