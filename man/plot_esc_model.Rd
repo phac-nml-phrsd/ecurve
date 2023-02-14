@@ -4,12 +4,14 @@
 \alias{plot_esc_model}
 \title{Plot Fitted ESC Model}
 \usage{
-plot_esc_model(plot, model, level = 0.95)
+plot_esc_model(model, plot, level = 0.95)
 }
 \arguments{
-\item{plot}{ggplot object to which fitted model will be added}
-
 \item{model}{esc object represeting fitted model}
+
+\item{plot}{ggplot object to which fitted model will be added. Optional,
+if none is provided, a plot of the data used to fit the model will be
+automatically generated using \code{\link[=plot_esc_data]{plot_esc_data()}}.}
 
 \item{level}{level of probability interval, defaults to 0.95}
 }

@@ -4,18 +4,18 @@
 \alias{plot_esc_data}
 \title{Plot Standard Curve Calibration Data}
 \usage{
-plot_esc_data(concentrations, cqs)
+plot_esc_data(esc_data)
 }
 \arguments{
-\item{concentrations}{Numeric vector of known sample concentrations}
-
-\item{cqs}{Numeric vector of corresponding Cq values, with non-detects coded
-as NaN}
+\item{esc_data}{Data frame containing data to bt used to fit the model. Must
+contain a column named "concentrations" with known sample concentrations, and
+a column named "cqs" with corresponding Cq values. Non-detects should be
+encoded by a cq value of NaN}
 }
 \value{
 ggplot object representing plot
 }
 \description{
-Given vectors of concentrations and corresponding Cq values, plots Cq values
-agains log-transformed concentrations
+Given data frame containing concentrations and corresponding Cq values, plots
+Cq values against log-transformed concentrations
 }

@@ -4,13 +4,13 @@
 \alias{esc_mle}
 \title{Fit ESC Model Using MLE}
 \usage{
-esc_mle(concentrations, cqs)
+esc_mle(esc_data)
 }
 \arguments{
-\item{concentrations}{Numeric vector of known sample concentrations}
-
-\item{cqs}{Numeric vector of corresponding Cq values, with non-detects coded
-as NaN}
+\item{esc_data}{Data frame containing data to bt used to fit the model. Must
+contain a column named "concentrations" with known sample concentrations, and
+a column named "cqs" with corresponding Cq values. Non-detects should be
+encoded by a Cq value of NaN}
 }
 \value{
 esc object representing fitted model

@@ -64,19 +64,30 @@ esc_log_likelihood <- function(params, concentrations, cqs) {
 
 #' Fit ESC Model Using MLE
 #'
-#' @param concentrations Numeric vector of known sample concentrations
-#' @param cqs Numeric vector of corresponding Cq values, with non-detects coded
-#' as NaN
+#' @param esc_data Data frame containing data to bt used to fit the model. Must
+#' contain a column named "concentrations" with known sample concentrations, and
+#' a column named "cqs" with corresponding Cq values. Non-detects should be
+#' encoded by a Cq value of NaN
 #'
 #' @return esc object representing fitted model
 #' @export
 #'
 #' @example
 #'
-esc_mle <- function(concentrations, cqs) {
+esc_mle <- function(esc_data) {
 
   # --- Inputs Checks
 
+  if(!is.data.frame(esc_data)) {stop("esc_data must be a data frame")}
+  if(!"concentrations" %in% names(esc_data)) {
+    stop("esc_data must contain concentrations column")
+  }
+  if(!"cqs" %in% names(esc_data)) {
+    stop("esc_data must contain cqs column")
+  }
+
+  concentrations <- esc_data[,"concentrations"]
+  cqs <- esc_data[,"cqs"]
   if(!all(is.numeric(concentrations))) {stop("concentrations must be numeric")}
   if(!all(concentrations >= 0 & is.finite(concentrations))) {
     stop("concentrations must be non-negative real numbers")
@@ -110,5 +121,6 @@ esc_mle <- function(concentrations, cqs) {
 
   new_esc(intercept = res$estimate[1],
           slope = res$estimate[2],
-          sigma = res$estimate[3])
+          sigma = res$estimate[3],
+          data = data.frame(concentrations = concentrations, cqs = cqs))
 }

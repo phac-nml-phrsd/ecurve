@@ -4,7 +4,7 @@
 \alias{new_esc}
 \title{Create New esc Object}
 \usage{
-new_esc(intercept, slope, sigma)
+new_esc(intercept, slope, sigma, data = NULL)
 }
 \arguments{
 \item{intercept}{intercept parameter of ESC model}
@@ -12,6 +12,9 @@ new_esc(intercept, slope, sigma)
 \item{slope}{slope parameter of ESC model}
 
 \item{sigma}{sigma parameter of ESC model}
+
+\item{data}{data frame containing concentration and cq values used to fit the
+model. Optional parameter, defaults to NULL if not provided.}
 }
 \value{
 Object of class esc

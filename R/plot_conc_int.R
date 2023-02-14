@@ -36,7 +36,5 @@ plot_conc_int <- function(interval, type) {
                           mapping = ggplot2::aes(x = x, y = 0, xend = x,
                                                  yend = y, color = Legend))
 
-  #Diplay and return plot
-  print(plot)
   plot
 }
