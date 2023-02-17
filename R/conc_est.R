@@ -1,14 +1,14 @@
-#' Factory Function to Create Concentration Likelihood Function
+#' Factory Function to Create Concentration Log Likelihood Function
 #'
 #' Given ESC Model parameters and observed Cq data, returns function implementing
-#' likelihood calculation for concentration estimation
+#' negative log likelihood calculation for concentration estimation
 #'
 #' @param cqs Numeric vector of observed Cq values, with non-detects coded as NaN
 #' @param model `esc` object representing fitted model to use for estimation.
 #'
-#' @return Function that takes single input concentration and returns
-#' corresponding likelihhod
-conc_likelihood_factory <- function(cqs, model) {
+#' @return Function that takes single input concentration and returns negative of
+#' corresponding log likelihhod
+conc_log_likelihood_factory <- function(cqs, model) {
 
   # --- unpack
   intercept = model$intercept
@@ -30,7 +30,7 @@ conc_likelihood_factory <- function(cqs, model) {
 
   function(concentration) {
 
-    if(concentration < 0) {return(0)}
+    if(concentration < 0) {return(Inf)}
 
     N0start <- max(qpois(1E-15, concentration), 1)
     N0end   <- max(qpois(1E-15, concentration, lower.tail = FALSE), 2)
@@ -52,10 +52,10 @@ conc_likelihood_factory <- function(cqs, model) {
     # --- Likelihood components
     lk.norm = norm_densities[,N0s - N0min + 1]
     lk.pois = dpois(N0s, concentration)
-    cond.detect = exp(-num_non_detects * concentration)
+    cond.detect = num_non_detects * concentration
 
     # --- Final likelihood
-    res = prod(lk.norm %*% lk.pois, cond.detect)
+    res = sum(-log(lk.norm %*% lk.pois), cond.detect)
     return(res)
     # prod(norm_densities[,N0s - N0min + 1] %*% dpois(N0s, concentration),
     #      exp(-num_non_detects * concentration))
@@ -88,10 +88,10 @@ conc_mle <- function(cqs, model) {
 
   # --- Compute MLE
 
-  conc_likelihood <- conc_likelihood_factory(cqs,model)
+  conc_log_like <- conc_log_likelihood_factory(cqs,model)
 
   res = nlm(
-    f = function(conc) {-log(conc_likelihood(conc))},
+    f = conc_log_like,
     p = exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope) )
 
   return(res$estimate)
@@ -136,22 +136,22 @@ conc_interval <- function(cqs, model, level = 0.95) {
   }
 
   # --- Compute MLE
-  conc_likelihood <- conc_likelihood_factory(cqs, model)
+  conc_log_like<- conc_log_likelihood_factory(cqs, model)
 
-  mle <- nlm(function(conc) {-log(conc_likelihood(conc))},
+  mle <- nlm(conc_log_like,
              exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope))$estimate
 
   # Compute bounds for numerical intergration
-  threshold <- conc_likelihood(mle) / 1E9
-  lb <- uniroot(function(conc) {conc_likelihood(conc) - threshold}, lower = 0,
+  threshold <- conc_log_like(mle) + 9 * log(10)
+  lb <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = 0,
                 upper = mle)$root
-  ub <- uniroot(function(conc) {conc_likelihood(conc) - threshold}, lower = mle,
-                upper = 2 * mle, extendInt = "downX")$root
+  ub <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
+                upper = 2 * mle, extendInt = "upX")$root
   lb <- max(lb, ub/2001)
 
   # --- Perform numerical integration
   grid <- seq(lb, ub, length.out = 1001)
-  pdf <- sapply(grid, conc_likelihood)
+  pdf <- exp(conc_log_like(mle) - sapply(grid, conc_log_like))
   cdf <- cumsum(pdf) * (ub - lb) / 1000
 
   # --- Construct and return interval
