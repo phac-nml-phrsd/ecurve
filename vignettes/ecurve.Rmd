@@ -1,0 +1,44 @@
+---
+title: "ecurve"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ecurve}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Introduction and Background
+
+This document provides an introduction to `ecurve`, an R library that implements the Enhanced Standard Curve (ESC) model for analysing qpcr data.
+```{r setup}
+library(ecurve)
+```
+The remainder of this section provides a brief description of the esc model, while later sections illustrate the application of the model, through the `ecurve` package, to an example qpcr dataset. The same dataset will also be analyzed using established standard curve methods, in order to show the contrast between the two approaches.
+
+The ESC model is a hierarchical model that attempts to capture the randomness inherent in both the number of gene copies from a sample that end up in a particular well and in the $C_q$ value that results from running qpcr on a well with a given initial number of gene copies. The initial number of gene copies in a given well, $N_0$, is modeled as $N_0 \sim Poisson(\lambda)$, where $\lambda$ is the concentration of the gene in the sample from which the well was drawn. As in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qpcr has a linear relationship with $\log N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$. Thus, $C_q \sim N(\alpha + \beta \log N_0, \sigma^2)$. Togeather, these assumptions fully determine the expected distribution of $C_q$ values for any sample concentration, and hence fully specify the model. The `ecurve` package provides mechanisms for fitting the model based on qpcr data from samples of known concentration via mle estimation of the parameters $\alpha$, $\beta$ and $\sigma$ using the `esc_mle()` function, for estimating the concentration of an unknown sample from qpcr data and a fitted model via the `conc_mle` function, and for using baysian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate via the `conc_interval()` function. The functions `plot_esc_data()`, `plot_esc_model()` and `plot_conc_int()` are also provided to help visualize the results of these analyses.
+
+## Data
+
+The data used for this example analysis is located in two csv files: `esc-fit-data.csv` and `esc_test-data.csv`. `esc-fit-data.csv` contains data for fitting the model, and contains two columns, a concentration column containing known sample concentrations, and a cqs column containing the corresponding $C_q$ value obtained in a qpcr run. `esc_test-data.csv` contains data for illustrating concentration estimation, and contains two columns, a sample column containing a numerical index of the sample for which we wish to know the concentration (due to the presence of technical replicates, these are not unique), and  cqs column containing the corresponding $C_q$ value obtained in a qpcr run. We now proceed to load the data:
+```{r}
+fit.data <- read.csv("esc-fit-data.csv")
+test.data <- read.csv("esc-test-data.csv")
+```
+In the datasets, non-detects are encoded by a cq value of "ND", which also results in the cqs values being interpreded as strings. However, the `ecurve` package requires the cqs values to be numeric with non-detects coded as `NaN`, so the data must be modified to fit this standard before the analysis is run.
+```{r}
+fit.data$cqs[which(fit.data$cqs == "ND")] <- NaN
+fit.data$cqs <- as.numeric(fit.data$cqs)
+test.data$cqs[which(test.data$cqs == "ND")] <- NaN
+test.data$cqs <- as.numeric(test.data$cqs)
+```
+
+## Model Fitting
+
+## Concentration Estimation
