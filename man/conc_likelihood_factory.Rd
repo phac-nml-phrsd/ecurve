@@ -4,16 +4,12 @@
 \alias{conc_likelihood_factory}
 \title{Factory Function to Create Concentration Likelihood Function}
 \usage{
-conc_likelihood_factory(cqs, intercept, slope, sigma)
+conc_likelihood_factory(cqs, model)
 }
 \arguments{
 \item{cqs}{Numeric vector of observed Cq values, with non-detects coded as NaN}
 
-\item{intercept}{intercept parameter of ESC model}
-
-\item{slope}{slope parameter of ESC model}
-
-\item{sigma}{sigma parameter of ESC model}
+\item{model}{\code{esc} object representing fitted model to use for estimation.}
 }
 \value{
 Function that takes single input concentration and returns

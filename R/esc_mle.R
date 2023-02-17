@@ -62,19 +62,60 @@ esc_log_likelihood <- function(params, concentrations, cqs) {
 }
 
 
+#' Calculate Theoretical Quantiles for Cq Values
+#'
+#' Given ESC model parameters, quantile level alpha, and vector of concentrations
+#' evaluates that alpha-th quantile of the theoretical distribution of cq values
+#' at each of the specified concentrations
+#'
+#' @param concentrations numeric vector of concentrations at which to evaluate
+#' specified quantile
+#' @param alpha quantile level
+#' @param intercept intercept parameter of ESC model
+#' @param slope slope parameter of ESC model
+#' @param sigma sigma parameter of ESC model
+#'
+#' @return Numeric vector containing the calculated quantiles
+cq_quantile <- function(alpha,
+                        concentrations,
+                        intercept,
+                        slope,
+                        sigma) {
+  N0starts <- pmax(qpois(1E-15, concentrations), 1)
+  N0ends <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0starts + 1)
+  N0min <- min(N0starts)
+  N0max <- max(N0ends)
+  N0s <- N0min:N0max
+  means <- intercept + slope * log(N0s)
+
+  quant <- function(conc, N0start, N0end) {
+    uniroot(function(cq) {
+      sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
+            dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
+      lower = qnorm(alpha, mean = means[N0end], sd = sigma),
+      upper = qnorm(alpha, mean = means[N0start], sd = sigma))$root
+  }
+  res = mapply(quant, conc = concentrations, N0start = N0starts - N0min + 1,
+               N0end = N0ends - N0min + 1)
+  return(res)
+}
+
+
+
 #' Fit ESC Model Using MLE
 #'
-#' @param esc_data Data frame containing data to bt used to fit the model. Must
+#' @param esc_data Data frame containing data to be used to fit the model. Must
 #' contain a column named "concentrations" with known sample concentrations, and
 #' a column named "cqs" with corresponding Cq values. Non-detects should be
 #' encoded by a Cq value of NaN
+#' @param CI Numeric. Width of the confidence interval.
 #'
 #' @return esc object representing fitted model
 #' @export
 #'
 #' @example
 #'
-esc_mle <- function(esc_data) {
+esc_mle <- function(esc_data, CI = 0.95) {
 
   # --- Inputs Checks
 
@@ -100,6 +141,9 @@ esc_mle <- function(esc_data) {
     stop("concentrations and cqs must be the same length")
   }
 
+  if(!is.numeric(CI)) {stop("CI must be numeric")}
+  if(CI > 1 | CI < 0) {stop("CI must be between 0 and 1")}
+
   # --- Filter out the non-detects
   detects <- !is.nan(cqs)
   concentrations <- concentrations[detects]
@@ -111,16 +155,37 @@ esc_mle <- function(esc_data) {
   naive_sc <- lm(cqs ~ log(concentrations))
 
   # --- ESC model fitting
+
   init <- c(unname(coef(naive_sc)), sigma(naive_sc))
 
-  # DC: why not `optim()`??
   res <- nlm(f = esc_log_likelihood,
              p = init,
              concentrations = concentrations,
              cqs = cqs)
 
-  new_esc(intercept = res$estimate[1],
-          slope = res$estimate[2],
-          sigma = res$estimate[3],
-          data = data.frame(concentrations = concentrations, cqs = cqs))
+  intercept = res$estimate[1]
+  slope     = res$estimate[2]
+  sigma     = res$estimate[3]
+
+  # --- Quantiles for Cq values
+
+  alphas = c(0.5 - CI/2, 0.5, 0.5 + CI/2)
+
+  cq.quants = lapply(X = alphas, FUN = cq_quantile,
+                     concentrations = concentrations,
+                     intercept = intercept,
+                     slope = slope,
+                     sigma = sigma)
+
+  names(cq.quants) = c('low', 'median', 'high')
+
+
+  m = new_esc(intercept = res$estimate[1],
+              slope = res$estimate[2],
+              sigma = res$estimate[3],
+              cq_quantiles = as.data.frame(cq.quants),
+              cq_quantiles_CI = CI,
+              data = data.frame(concentrations = concentrations,
+                                cqs = cqs))
+  return(m)
 }

@@ -10,7 +10,7 @@ conc_mle(cqs, model)
 \item{cqs}{Numeric vector of Cq values from sample replicates, non-detects
 coded as NaN}
 
-\item{model}{esc object representing fitted model to use for estimation}
+\item{model}{\code{esc} object representing fitted model to use for estimation.}
 }
 \value{
 MLE of concentration
