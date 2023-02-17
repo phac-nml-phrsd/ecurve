@@ -4,38 +4,61 @@
 #' likelihood calculation for concentration estimation
 #'
 #' @param cqs Numeric vector of observed Cq values, with non-detects coded as NaN
-#' @param intercept intercept parameter of ESC model
-#' @param slope slope parameter of ESC model
-#' @param sigma sigma parameter of ESC model
+#' @param model `esc` object representing fitted model to use for estimation.
 #'
 #' @return Function that takes single input concentration and returns
 #' corresponding likelihhod
-conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
+conc_likelihood_factory <- function(cqs, model) {
+
+  # --- unpack
+  intercept = model$intercept
+  slope     = model$slope
+  sigma     = model$sigma
+
+  # --- Identify non-detects (if any)
   detects <- which(!is.nan(cqs))
   num_non_detects <- length(cqs) - length(detects)
   cqs <- cqs[detects]
+
   N0max <- N0min <- max(round(exp(mean(cqs) - intercept)/slope), 1)
+
   gen_norm_densities <- function(N0) {
     dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   }
+
   norm_densities <- gen_norm_densities(N0max)
+
   function(concentration) {
+
     if(concentration < 0) {return(0)}
+
     N0start <- max(qpois(1E-15, concentration), 1)
-    N0end <- max(qpois(1E-15, concentration, lower.tail = FALSE), 2)
+    N0end   <- max(qpois(1E-15, concentration, lower.tail = FALSE), 2)
+
     if (N0start < N0min) {
       norm_densities <<- cbind(sapply(N0start:(N0min - 1), gen_norm_densities),
                                norm_densities)
       N0min <<- N0start
     }
+
     if(N0end > N0max) {
       norm_densities <<- cbind(norm_densities,
                                sapply((N0max + 1):N0end, gen_norm_densities))
       N0max <<- N0end
     }
+
     N0s <- N0start:N0end
-    prod(norm_densities[,N0s - N0min + 1] %*% dpois(N0s, concentration),
-         exp(-num_non_detects * concentration))
+
+    # --- Likelihood components
+    lk.norm = norm_densities[,N0s - N0min + 1]
+    lk.pois = dpois(N0s, concentration)
+    cond.detect = exp(-num_non_detects * concentration)
+
+    # --- Final likelihood
+    res = prod(lk.norm %*% lk.pois, cond.detect)
+    return(res)
+    # prod(norm_densities[,N0s - N0min + 1] %*% dpois(N0s, concentration),
+    #      exp(-num_non_detects * concentration))
   }
 }
 
@@ -46,7 +69,7 @@ conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
 #'
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
 #' coded as NaN
-#' @param model esc object representing fitted model to use for estimation
+#' @param model `esc` object representing fitted model to use for estimation.
 #'
 #' @return MLE of concentration
 #' @export
@@ -54,7 +77,8 @@ conc_likelihood_factory <- function(cqs, intercept, slope, sigma) {
 #' @examples
 conc_mle <- function(cqs, model) {
 
-  #Input checks
+  # --- Input checks
+
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
@@ -62,11 +86,15 @@ conc_mle <- function(cqs, model) {
   if(class(model) != "esc") {stop("model is not an esc object")}
   if(all(is.nan(cqs))) {return(0)}
 
-  #Compute MLE
-  conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
-                                             model$sigma)
-  nlm(function(conc) {-log(conc_likelihood(conc))},
-      exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope))$estimate
+  # --- Compute MLE
+
+  conc_likelihood <- conc_likelihood_factory(cqs,model)
+
+  res = nlm(
+    f = function(conc) {-log(conc_likelihood(conc))},
+    p = exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope) )
+
+  return(res$estimate)
 }
 
 #' Generate credible interval for concentration analytically
@@ -89,7 +117,7 @@ conc_mle <- function(cqs, model) {
 #' @examples
 conc_interval <- function(cqs, model, level = 0.95) {
 
-  #Input checks
+  # --- Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
@@ -98,7 +126,7 @@ conc_interval <- function(cqs, model, level = 0.95) {
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
-  #Deal with case of all non-detects seperately
+  # --- Deal with case of all non-detects seperately
   if(all(is.nan(cqs))) {
     n <- length(cqs)
     grid <- seq(from = 0, to = log(10) * 9 / n, length.out = 1001)
@@ -107,13 +135,13 @@ conc_interval <- function(cqs, model, level = 0.95) {
                         cdf = sapply(grid, function(x) {1 - exp(-x * n)})))
   }
 
-  #Compute MLE
-  conc_likelihood <- conc_likelihood_factory(cqs, model$intercept, model$slope,
-                                             model$sigma)
+  # --- Compute MLE
+  conc_likelihood <- conc_likelihood_factory(cqs, model)
+
   mle <- nlm(function(conc) {-log(conc_likelihood(conc))},
              exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope))$estimate
 
-  #Compute bounds for numerical intergration
+  # Compute bounds for numerical intergration
   threshold <- conc_likelihood(mle) / 1E9
   lb <- uniroot(function(conc) {conc_likelihood(conc) - threshold}, lower = 0,
                 upper = mle)$root
@@ -121,14 +149,17 @@ conc_interval <- function(cqs, model, level = 0.95) {
                 upper = 2 * mle, extendInt = "downX")$root
   lb <- max(lb, ub/2001)
 
-  #Perform numerical integration
+  # --- Perform numerical integration
   grid <- seq(lb, ub, length.out = 1001)
   pdf <- sapply(grid, conc_likelihood)
   cdf <- cumsum(pdf) * (ub - lb) / 1000
 
-  #Construct and return interval
+  # --- Construct and return interval
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
   bounds <- findInterval(limits, cdf) + 1
   interval <- grid[bounds] + (0.5 - (cdf[bounds] - limits)/pdf[bounds]) * (ub - lb) / 1000
-  new_conc_int(mle, interval, grid, pdf, cdf)
+
+  res = new_conc_int(mle, interval, grid, pdf, cdf)
+
+  return(res)
 }
