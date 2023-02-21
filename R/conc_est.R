@@ -156,8 +156,7 @@ conc_interval <- function(cqs, model, level = 0.95) {
 
   # --- Construct and return interval
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
-  bounds <- findInterval(limits, cdf) + 1
-  interval <- grid[bounds] + (0.5 - (cdf[bounds] - limits)/pdf[bounds]) * (ub - lb) / 1000
+  interval <- approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
 
   res = new_conc_int(mle, interval, grid, pdf, cdf)
 
