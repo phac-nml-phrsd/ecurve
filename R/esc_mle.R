@@ -17,12 +17,13 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
   # DC: we may want to merge `intercept`, `slope` and `sigma`
   # in one single _named_ vector `params`
 
-  N0starts <- pmax(qpois(1E-15, concentrations), 1)
-  N0ends   <- qpois(1E-15, concentrations, lower.tail = FALSE)
-  N0min    <- min(N0starts)
-  N0max    <- max(N0ends)
-  N0s      <- N0min:N0max
+  N0mins <- pmax(qpois(1E-15, concentrations), 1)
+  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
+  N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
   mean_cqs <- intercept + slope * log(N0s)
+  N0starts <- match(N0mins, N0s)
+  N0ends <- match(N0maxes, N0s)
+
   probdens <- function(conc, cq, N0start, N0end) {
 
     tmp1 <- dpois(x      = N0s[N0start:N0end],
@@ -34,8 +35,8 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 
     return( sum( tmp1 * tmp2 ) )
   }
-  res <- mapply(probdens, conc = concentrations, cq = cqs,
-                N0start = N0starts - N0min + 1, N0end = N0ends - N0min + 1)
+  res <- mapply(probdens, conc = concentrations, cq = cqs, N0start = N0starts,
+                N0end = N0ends)
   return(res)
 }
 
@@ -81,12 +82,12 @@ cq_quantile <- function(alpha,
                         intercept,
                         slope,
                         sigma) {
-  N0starts <- pmax(qpois(1E-15, concentrations), 1)
-  N0ends <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0starts + 1)
-  N0min <- min(N0starts)
-  N0max <- max(N0ends)
-  N0s <- N0min:N0max
+  N0mins <- pmax(qpois(1E-15, concentrations), 1)
+  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins + 1)
+  N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
   means <- intercept + slope * log(N0s)
+  N0starts <- match(N0mins, N0s)
+  N0ends <- match(N0maxes, N0s)
 
   quant <- function(conc, N0start, N0end) {
     uniroot(function(cq) {
@@ -95,8 +96,7 @@ cq_quantile <- function(alpha,
       lower = qnorm(alpha, mean = means[N0end], sd = sigma),
       upper = qnorm(alpha, mean = means[N0start], sd = sigma))$root
   }
-  res = mapply(quant, conc = concentrations, N0start = N0starts - N0min + 1,
-               N0end = N0ends - N0min + 1)
+  res = mapply(quant, conc = concentrations, N0start = N0starts, N0end = N0ends)
   return(res)
 }
 

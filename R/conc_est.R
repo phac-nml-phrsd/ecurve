@@ -20,7 +20,7 @@ conc_log_likelihood_factory <- function(cqs, model) {
   num_non_detects <- length(cqs) - length(detects)
   cqs <- cqs[detects]
 
-  N0max <- N0min <- max(round(exp(mean(cqs) - intercept)/slope), 1)
+  N0max <- N0min <- max(round(exp((mean(cqs) - intercept)/slope)), 1)
 
   gen_norm_densities <- function(N0) {
     dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
@@ -143,10 +143,11 @@ conc_interval <- function(cqs, model, level = 0.95) {
 
   # Compute bounds for numerical intergration
   threshold <- conc_log_like(mle) + 9 * log(10)
-  lb <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = 0,
-                upper = mle)$root
+  root_est_factor <- exp(4 * model$sigma / abs(model$slope))
+  lb <- uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
+                lower = mle / root_est_factor, extendInt = "downX")$root
   ub <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
-                upper = 2 * mle, extendInt = "upX")$root
+                upper = mle * root_est_factor, extendInt = "upX")$root
   lb <- max(lb, ub/2001)
 
   # --- Perform numerical integration
