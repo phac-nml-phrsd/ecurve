@@ -83,20 +83,20 @@ model$eff
 
 As such, these MLE estimates are not directly useful. We will see how this fitted model will be used to directly estimate concentrations form $C_q$ values measured from new samples.
 
-The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The black points represent the datapoints used to fit the model, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% credible interval (or any other percentage, as specified by the input parameter`CI` when fitting the model) of the fit. The plot is returned by the function as a `ggplot` object.
+The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The black points represent the datapoints used to fit the model, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `CI` when fitting the model) for the $C_q$ values given the fitted model prarmeters. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. The plot is returned by the function as a `ggplot` object.
 ```{r plot_esc_model, fig.width=6}
 plot_esc_model(model)
 ```
 
+Note that, with the exception of a few outliers, all of the datapoints lie within the light blue region, indicating that the model is accurately capturing the variability in the data.
 
 For contrast, we also illustrate fitting a simple linear model regressing $C_q$ on log concentration as in traditional standard curve analysis. To visualize this model, we use the `plot_esc_data()` and then manually add the regression line (using `ggplot` built-in regression):
 ```{r linear_regression, warning=FALSE, fig.width=6}
 plot_esc_data(fit.data) + 
-  ggplot2::geom_smooth(method = 'lm', formula = 'y~x',)
+  ggplot2::geom_smooth(method = 'lm', formula = 'y~x', se = FALSE)
 ```
 
-Notice that, compared to the ESC model fitted above, this standard curve model (based on a simple linear regression) has much narrower uncertainty (measured with the regression confidence interval in this case - which could be over-optimistic).
-We also note the difference of the functional relationship at low concentrations. The naive linear regression cannot account for the greater spread in $C_q$ values observed at lower concentrations, or indeed meaningfully quantify that spread at all.
+Note the difference of the functional relationship at low concentrations. The naive linear regression cannot account for the greater spread in $C_q$ values observed at lower concentrations, or indeed meaningfully quantify that spread at all.
 
 
 
