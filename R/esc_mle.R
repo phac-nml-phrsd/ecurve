@@ -24,12 +24,27 @@ get_bounds <- function(conc, cqs, intercept, slope, sigma) {
 }
 
 likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
-  dens_est <- function(N0) {
-    prod(dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma),
-         dnorm(N0, mean = conc, sd = sqrt(conc)))
+  dens_est <- function(N0s, cq) {
+    dnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
+      dnorm(N0s, mean = conc, sd = sqrt(conc))
   }
-  bounds <- get_bounds(conc, cqs, intercept, slope, sigma)
-  integrate(Vectorize(dens_est), lower = bounds[1], upper = bounds[2], abs.tol = 1e-100)$value
+  lb <- qpois(1e-15, conc)
+  ub <- qpois(1e-15, conc, lower.tail = FALSE)
+  prod(sapply(cqs, function(cq){
+    integrate(dens_est, lower = lb, upper = ub, cq = cq)$value
+  }))
+}
+
+likelihood_est2 <- function(conc, cqs, intercept, slope, sigma) {
+  lb <- qpois(1e-15, conc)
+  ub <- qpois(1e-15, conc, lower.tail = FALSE)
+  granularity <- ceiling((ub - lb)/250)
+  N0s <- seq(lb, ub, by = granularity)
+  norm_dens <- sapply(N0s, function(N0){
+    dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
+  })
+  pois_dens <- dpois(N0s, conc)
+  prod((norm_dens %*% pois_dens) * granularity)
 }
 
 #' Calculate cq PDFs under ESC Model

@@ -32,9 +32,8 @@ conc_log_likelihood_factory <- function(cqs, model) {
 
     if(concentration < 0) {return(Inf)}
 
-    bounds <- get_bounds(concentration, cqs, intercept, slope, sigma)
-    N0start <- bounds[1]
-    N0end   <- bounds[2]
+    N0start <- max(qpois(1e-15, concentration), 1)
+    N0end   <- max(qpois(1e-15, concentration, lower.tail = FALSE), N0start + 1)
 
     if (N0start < N0min) {
       norm_densities <<- cbind(sapply(N0start:(N0min - 1), gen_norm_densities),
