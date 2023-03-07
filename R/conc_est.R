@@ -70,12 +70,14 @@ conc_log_likelihood_factory <- function(cqs, model) {
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
 #' coded as NaN
 #' @param model `esc` object representing fitted model to use for estimation.
+#' @param approximate logical. If TRUE, a faster but potentially less accurate
+#' approximation for the likelihood function will be used at high concentrations
 #'
 #' @return MLE of concentration
 #' @export
 #'
 #' @examples
-conc_mle <- function(cqs, model) {
+conc_mle <- function(cqs, model, approximate = FALSE) {
 
   # --- Input checks
 
@@ -84,11 +86,18 @@ conc_mle <- function(cqs, model) {
     stop("cqs must be non-negative real numbers or NaN")
   }
   if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.logical(approximate)) {stop("approximate must be logical")}
   if(all(is.nan(cqs))) {return(0)}
 
   # --- Compute MLE
-
-  conc_log_like <- conc_log_likelihood_factory(cqs,model)
+  if(approximate){
+    conc_log_like <- function(conc) {
+      log_likelihood_est(conc, cqs, model$intercept, model$slope, model$sigma)
+    }
+  }
+  else {
+    conc_log_like <- conc_log_likelihood_factory(cqs, model)
+  }
 
   res = nlm(
     f = conc_log_like,
@@ -107,6 +116,8 @@ conc_mle <- function(cqs, model) {
 #' coded as NaN
 #' @param model esc object representing fitted model to use for estimation
 #' @param level Desired credibily level, defaults to 0.95
+#' @param approximate logical. If TRUE, a faster but potentially less accurate
+#' approximation for the likelihood function will be used at high concentrations
 #'
 #' @return conc_int object, containing a list interval specifying the lower and
 #' upper bounds of desired credible interval, as well as the maximum likelihood
@@ -115,7 +126,7 @@ conc_mle <- function(cqs, model) {
 #' @export
 #'
 #' @examples
-conc_interval <- function(cqs, model, level = 0.95) {
+conc_interval <- function(cqs, model, level = 0.95, approximate = FALSE) {
 
   # --- Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
@@ -125,6 +136,7 @@ conc_interval <- function(cqs, model, level = 0.95) {
   if(class(model) != "esc") {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+  if(!is.logical(approximate)) {stop("approximate must be logical")}
 
   # --- Deal with case of all non-detects seperately
   if(all(is.nan(cqs))) {
@@ -136,7 +148,14 @@ conc_interval <- function(cqs, model, level = 0.95) {
   }
 
   # --- Compute MLE
-  conc_log_like<- conc_log_likelihood_factory(cqs, model)
+  if(approximate){
+    conc_log_like <- function(conc) {
+      log_likelihood_est(conc, cqs, model$intercept, model$slope, model$sigma)
+    }
+  }
+  else {
+    conc_log_like <- conc_log_likelihood_factory(cqs, model)
+  }
 
   mle <- nlm(conc_log_like,
              exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope))$estimate

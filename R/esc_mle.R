@@ -1,50 +1,41 @@
-get_bounds <- function(conc, cqs, intercept, slope, sigma) {
-  density_term <- function(N0) {
-    -sum(dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma, log = TRUE),
-      dpois(N0, conc, log = TRUE))
-  }
-  density_interp <- function(N0) {
-    weight <- N0 - floor(N0)
-    density_term(floor(N0)) * (1 - weight) + density_term(ceiling(N0)) * weight
-  }
-  cq_conc_ests <- exp((cqs - intercept)/slope)
-  lb <- max(1, min(conc, cq_conc_ests))
-  ub <- max(conc, cq_conc_ests, lb + 1)
-  optN0 <- optimize(density_interp, lower = lb, upper = ub, tol = 0.01)
-  threshold <- optN0$objective + 6 * log(10)
-  if (density_term(1) < threshold) N0min <- 1
-  else {
-    N0min <- floor(uniroot(function(conc) {density_interp(conc) - threshold},
-                           lower = 1, upper = optN0$minimum, tol = 0.01)$root)
-  }
-  N0max <- ceiling(uniroot(function(conc) {density_interp(conc) - threshold},
-                           lower = optN0$minimum, upper = 2 * optN0$minimum,
-                           extendInt = "upX", tol = 0.01)$root)
-  return(c(N0min, max(N0min + 1, N0max)))
-}
+#' Faster Estimation of log likelihood values for ESC model
+#'
+#' Estimates likelihood of given set of observed Cq values given a concentration
+#' and ESC model parameters. For efficiency, ensures that a maximum of 100 N0
+#' values are considered when the computation is performed. N0 values used for
+#' computation are equally spaced out between the computed lower and upper bounds,
+#' and are used to estimate contribution of nearby N0 values not included in the
+#' computation.
+#'
+#' @param conc numeric concentration
+#' @param cqs numeric vector containing observed Cq values to estimate the
+#' likelihood of, with non-detects encoded as NaN
+#' @param intercept intercept parameter of ESC model
+#' @param slope slope parameter of ESC model
+#' @param sigma sigma parameter of ESC model
+#'
+#' @return estimated log likelihood values
+#'
+log_likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
+  # --- Identify non-detects (if any)
+  detects <- which(!is.nan(cqs))
+  num_non_detects <- length(cqs) - length(detects)
+  cqs <- cqs[detects]
 
-likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
-  dens_est <- function(N0s, cq) {
-    dnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
-      dnorm(N0s, mean = conc, sd = sqrt(conc))
-  }
-  lb <- qpois(1e-15, conc)
-  ub <- qpois(1e-15, conc, lower.tail = FALSE)
-  prod(sapply(cqs, function(cq){
-    integrate(dens_est, lower = lb, upper = ub, cq = cq)$value
-  }))
-}
+  #determine N0 values at which to perform evaluation
+  N0start <- max(qpois(1e-15, conc), 1)
+  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), lb + 1)
+  granularity <- ceiling((N0start - N0end)/100)
+  N0s <- seq(N0start, N0end, by = granularity)
 
-likelihood_est2 <- function(conc, cqs, intercept, slope, sigma) {
-  lb <- qpois(1e-15, conc)
-  ub <- qpois(1e-15, conc, lower.tail = FALSE)
-  granularity <- ceiling((ub - lb)/250)
-  N0s <- seq(lb, ub, by = granularity)
+  #calculate intermediate results
   norm_dens <- sapply(N0s, function(N0){
     dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   })
   pois_dens <- dpois(N0s, conc)
-  prod((norm_dens %*% pois_dens) * granularity)
+
+  #calculate final log likelyhood
+  sum(-log((norm_dens %*% pois_dens) * granularity), num_non_detects * conc)
 }
 
 #' Calculate cq PDFs under ESC Model
@@ -54,7 +45,7 @@ likelihood_est2 <- function(conc, cqs, intercept, slope, sigma) {
 #'
 #' @param concentrations numeric vector of specified concentrations
 #' @param cqs numeric vector containing Cq value at which to compute pdf for
-#' each specificed concentration, with non-detects coded as NaN
+#' each specified concentration, with non-detects coded as NaN
 #' @param intercept intercept parameter of ESC model
 #' @param slope slope parameter of ESC model
 #' @param sigma sigma parameter of ESC model
@@ -97,17 +88,25 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 #' fit to
 #' @param cqs numeric vector containing Cq value for each specified concentration,
 #' with non-detects coded as NaN
+#' @param approximate logical. If TRUE, a faster but potentially less accurate
+#' approximation for the likelihood function will be used at high concentrations
 #'
-#' @return negative log likelihood evalueated at the given parameters
+#' @return negative log likelihood evaluated at the given parameters
 #'
-esc_log_likelihood <- function(params, concentrations, cqs) {
+esc_log_likelihood <- function(params, concentrations, cqs, approximate = FALSE) {
   if(params[3] < 0) {return(Inf)}
-
-  tmp <- esc_probdens(concentrations, cqs,
-                     intercept = params[1],
-                     slope = params[2],
-                     sigma = params[3])
-  res <- -sum(log(tmp))
+  else if (approximate) {
+    res <- sum(mapply(log_likelihood_est, conc = concentrations, cqs = cqs,
+                      MoreArgs = list(intercept = params[1], slope = params[2],
+                                      sigma = params[3])))
+  }
+  else {
+    tmp <- esc_probdens(concentrations, cqs,
+                        intercept = params[1],
+                        slope = params[2],
+                        sigma = params[3])
+    res <- -sum(log(tmp))
+  }
   return(res)
 }
 
@@ -149,7 +148,38 @@ cq_quantile <- function(alpha,
   return(res)
 }
 
+#' Faster Estimation of Theoretical Quantiles for Cq Values
+#'
+#' Given ESC model parameters, quantile level alpha, and concentration conc,
+#' estimates that alpha-th quantile of the theoretical distribution of Cq values
+#' at the specified concentration. For efficiency, ensures that a maximum of 100
+#' N0 values are considered when the computation is performed. N0 values used for
+#' computation are equally spaced out between the computed lower and upper bounds,
+#' and are used to estimate contribution of nearby N0 values not included in the
+#' computation.
+#'
+#' @param concentrations numeric concentration at which to evaluate specified
+#' quantile
+#' @param alpha quantile level
+#' @param intercept intercept parameter of ESC model
+#' @param slope slope parameter of ESC model
+#' @param sigma sigma parameter of ESC model
+#'
+#' @return estimate of specified quantile
+cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
+  #determine N0 values at which to perform evaluation
+  N0start <- max(qpois(1e-15, conc), 1)
+  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), lb + 1)
+  granularity <- ceiling((N0start - N0end)/100)
+  N0s <- seq(N0start, N0end, by = granularity)
 
+  #compute quantile
+  uniroot(function(cq) {
+    sum(pnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
+          dpois(N0s, conc)) - alpha * (1 - exp(-conc))},
+    upper = qnorm(alpha, mean = intercept + slope * log(N0start), sd = sigma),
+    lower = qnorm(alpha, mean = intercept + slope * log(N0end), sd = sigma))$root
+}
 
 #' Fit ESC Model Using MLE
 #'
@@ -158,13 +188,15 @@ cq_quantile <- function(alpha,
 #' a column named "cqs" with corresponding Cq values. Non-detects should be
 #' encoded by a Cq value of NaN
 #' @param CI Numeric. Width of the confidence interval.
+#' @param approximate logical. If TRUE, a faster but potentially less accurate
+#' approximation for the likelihood function will be used at high concentrations
 #'
 #' @return esc object representing fitted model
 #' @export
 #'
 #' @example
 #'
-esc_mle <- function(esc_data, CI = 0.95) {
+esc_mle <- function(esc_data, CI = 0.95, approximate = FALSE) {
 
   # --- Inputs Checks
 
@@ -193,6 +225,8 @@ esc_mle <- function(esc_data, CI = 0.95) {
   if(!is.numeric(CI)) {stop("CI must be numeric")}
   if(CI > 1 | CI < 0) {stop("CI must be between 0 and 1")}
 
+  if(!is.logical(approximate)) {stop("approximate must be logical")}
+
   # --- Filter out the non-detects
   detects <- !is.nan(cqs)
   concentrations <- concentrations[detects]
@@ -210,7 +244,8 @@ esc_mle <- function(esc_data, CI = 0.95) {
   res <- nlm(f = esc_log_likelihood,
              p = init,
              concentrations = concentrations,
-             cqs = cqs)
+             cqs = cqs,
+             approximate = approximate)
 
   intercept = res$estimate[1]
   slope     = res$estimate[2]
@@ -220,7 +255,10 @@ esc_mle <- function(esc_data, CI = 0.95) {
 
   alphas = c(0.5 - CI/2, 0.5, 0.5 + CI/2)
 
-  cq.quants = lapply(X = alphas, FUN = cq_quantile,
+  cq.quants = lapply(X = alphas,
+                     FUN = ifelse(approximate,
+                                  Vectorize(cq_quantile_est, "conc"),
+                                  cq_quantile),
                      concentrations = concentrations,
                      intercept = intercept,
                      slope = slope,
