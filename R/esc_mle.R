@@ -17,6 +17,8 @@
 #' @return estimated log likelihood values
 #'
 log_likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
+  if(conc < 0) return(Inf)
+
   # --- Identify non-detects (if any)
   detects <- which(!is.nan(cqs))
   num_non_detects <- length(cqs) - length(detects)
@@ -24,8 +26,8 @@ log_likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
 
   #determine N0 values at which to perform evaluation
   N0start <- max(qpois(1e-15, conc), 1)
-  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), lb + 1)
-  granularity <- ceiling((N0start - N0end)/100)
+  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
+  granularity <- ceiling((N0end - N0start)/100)
   N0s <- seq(N0start, N0end, by = granularity)
 
   #calculate intermediate results
@@ -57,12 +59,12 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
   # DC: we may want to merge `intercept`, `slope` and `sigma`
   # in one single _named_ vector `params`
 
-  bounds <- mapply(get_bounds, conc = concentrations, cqs = cqs, MoreArgs =
-                     list(intercept = intercept, slope = slope, sigma = sigma))
-  N0s <- unique(unlist(mapply(FUN = seq, sort(bounds[1,]), sort(bounds[2,]))))
+  N0mins <- pmax(qpois(1E-15, concentrations), 1)
+  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
+  N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
   mean_cqs <- intercept + slope * log(N0s)
-  N0starts <- match(bounds[1,], N0s)
-  N0ends <- match(bounds[2,], N0s)
+  N0starts <- match(N0mins, N0s)
+  N0ends <- match(N0maxes, N0s)
 
   probdens <- function(conc, cq, N0start, N0end) {
 
@@ -130,8 +132,8 @@ cq_quantile <- function(alpha,
                         intercept,
                         slope,
                         sigma) {
-  N0mins <- pmax(qpois(1E-9, concentrations), 1)
-  N0maxes <- pmax(qpois(1E-9, concentrations, lower.tail = FALSE), N0mins + 1)
+  N0mins <- pmax(qpois(1E-15, concentrations), 1)
+  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
   N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
   means <- intercept + slope * log(N0s)
   N0starts <- match(N0mins, N0s)
@@ -169,14 +171,14 @@ cq_quantile <- function(alpha,
 cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
   #determine N0 values at which to perform evaluation
   N0start <- max(qpois(1e-15, conc), 1)
-  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), lb + 1)
-  granularity <- ceiling((N0start - N0end)/100)
+  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
+  granularity <- ceiling((N0end - N0start)/100)
   N0s <- seq(N0start, N0end, by = granularity)
 
   #compute quantile
   uniroot(function(cq) {
     sum(pnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
-          dpois(N0s, conc)) - alpha * (1 - exp(-conc))},
+          dpois(N0s, conc) * granularity) - alpha * (1 - exp(-conc))},
     upper = qnorm(alpha, mean = intercept + slope * log(N0start), sd = sigma),
     lower = qnorm(alpha, mean = intercept + slope * log(N0end), sd = sigma))$root
 }
@@ -259,7 +261,7 @@ esc_mle <- function(esc_data, CI = 0.95, approximate = FALSE) {
                      FUN = ifelse(approximate,
                                   Vectorize(cq_quantile_est, "conc"),
                                   cq_quantile),
-                     concentrations = concentrations,
+                     concentrations,
                      intercept = intercept,
                      slope = slope,
                      sigma = sigma)
