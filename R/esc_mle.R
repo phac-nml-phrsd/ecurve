@@ -108,14 +108,14 @@ cq_quantile <- function(alpha,
 #' contain a column named "concentrations" with known sample concentrations, and
 #' a column named "cqs" with corresponding Cq values. Non-detects should be
 #' encoded by a Cq value of NaN
-#' @param CI Numeric. Width of the confidence interval.
+#' @param PI Numeric. Width of the probability interval.
 #'
 #' @return esc object representing fitted model
 #' @export
 #'
 #' @example
 #'
-esc_mle <- function(esc_data, CI = 0.95) {
+esc_mle <- function(esc_data, PI = 0.95) {
 
   # --- Inputs Checks
 
@@ -141,8 +141,8 @@ esc_mle <- function(esc_data, CI = 0.95) {
     stop("concentrations and cqs must be the same length")
   }
 
-  if(!is.numeric(CI)) {stop("CI must be numeric")}
-  if(CI > 1 | CI < 0) {stop("CI must be between 0 and 1")}
+  if(!is.numeric(PI)) {stop("PI must be numeric")}
+  if(PI > 1 | PI < 0) {stop("PI must be between 0 and 1")}
 
   # --- Filter out the non-detects
   detects <- !is.nan(cqs)
@@ -169,7 +169,7 @@ esc_mle <- function(esc_data, CI = 0.95) {
 
   # --- Quantiles for Cq values
 
-  alphas = c(0.5 - CI/2, 0.5, 0.5 + CI/2)
+  alphas = c(0.5 - PI/2, 0.5, 0.5 + PI/2)
 
   cq.quants = lapply(X = alphas, FUN = cq_quantile,
                      concentrations = concentrations,
@@ -184,7 +184,7 @@ esc_mle <- function(esc_data, CI = 0.95) {
               slope = res$estimate[2],
               sigma = res$estimate[3],
               cq_quantiles = as.data.frame(cq.quants),
-              cq_quantiles_CI = CI,
+              cq_quantiles_PI = PI,
               data = data.frame(concentrations = concentrations,
                                 cqs = cqs))
   return(m)
