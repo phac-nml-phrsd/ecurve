@@ -90,12 +90,13 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 #' fit to
 #' @param cqs numeric vector containing Cq value for each specified concentration,
 #' with non-detects coded as NaN
-#' @param approximate logical. If TRUE, a faster but potentially less accurate
-#' approximation for the likelihood function will be used at high concentrations
+#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' less accurate approximation for the likelihood function will be used at high
+#' concentrations
 #'
 #' @return negative log likelihood evaluated at the given parameters
 #'
-esc_log_likelihood <- function(params, concentrations, cqs, approximate = FALSE) {
+esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) {
   if(params[3] < 0) {return(Inf)}
   else if (approximate) {
     res <- sum(mapply(log_likelihood_est, conc = concentrations, cqs = cqs,
@@ -190,15 +191,16 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 #' a column named "cqs" with corresponding Cq values. Non-detects should be
 #' encoded by a Cq value of NaN
 #' @param CI Numeric. Width of the confidence interval.
-#' @param approximate logical. If TRUE, a faster but potentially less accurate
-#' approximation for the likelihood function will be used at high concentrations
+#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' less accurate approximation for the likelihood function will be used at high
+#' concentrations
 #'
 #' @return esc object representing fitted model
 #' @export
 #'
 #' @example
 #'
-esc_mle <- function(esc_data, CI = 0.95, approximate = FALSE) {
+esc_mle <- function(esc_data, CI = 0.95, approximate = TRUE) {
 
   # --- Inputs Checks
 

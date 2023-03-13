@@ -70,14 +70,15 @@ conc_log_likelihood_factory <- function(cqs, model) {
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
 #' coded as NaN
 #' @param model `esc` object representing fitted model to use for estimation.
-#' @param approximate logical. If TRUE, a faster but potentially less accurate
-#' approximation for the likelihood function will be used at high concentrations
+#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' less accurate approximation for the likelihood function will be used at high
+#' concentrations
 #'
 #' @return MLE of concentration
 #' @export
 #'
 #' @examples
-conc_mle <- function(cqs, model, approximate = FALSE) {
+conc_mle <- function(cqs, model, approximate = TRUE) {
 
   # --- Input checks
 
@@ -116,8 +117,9 @@ conc_mle <- function(cqs, model, approximate = FALSE) {
 #' coded as NaN
 #' @param model esc object representing fitted model to use for estimation
 #' @param level Desired credibily level, defaults to 0.95
-#' @param approximate logical. If TRUE, a faster but potentially less accurate
-#' approximation for the likelihood function will be used at high concentrations
+#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' less accurate approximation for the likelihood function will be used at high
+#' concentrations
 #'
 #' @return conc_int object, containing a list interval specifying the lower and
 #' upper bounds of desired credible interval, as well as the maximum likelihood
@@ -126,7 +128,7 @@ conc_mle <- function(cqs, model, approximate = FALSE) {
 #' @export
 #'
 #' @examples
-conc_interval <- function(cqs, model, level = 0.95, approximate = FALSE) {
+conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 
   # --- Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
