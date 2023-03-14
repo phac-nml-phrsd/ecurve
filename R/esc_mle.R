@@ -114,75 +114,6 @@ esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) 
 }
 
 
-#' Calculate Theoretical Quantiles for Cq Values
-#'
-#' Given ESC model parameters, quantile level alpha, and vector of concentrations
-#' evaluates that alpha-th quantile of the theoretical distribution of cq values
-#' at each of the specified concentrations
-#'
-#' @param concentrations numeric vector of concentrations at which to evaluate
-#' specified quantile
-#' @param alpha quantile level
-#' @param intercept intercept parameter of ESC model
-#' @param slope slope parameter of ESC model
-#' @param sigma sigma parameter of ESC model
-#'
-#' @return Numeric vector containing the calculated quantiles
-cq_quantile <- function(alpha,
-                        concentrations,
-                        intercept,
-                        slope,
-                        sigma) {
-  N0mins <- pmax(qpois(1E-15, concentrations), 1)
-  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
-  N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
-  means <- intercept + slope * log(N0s)
-  N0starts <- match(N0mins, N0s)
-  N0ends <- match(N0maxes, N0s)
-
-  quant <- function(conc, N0start, N0end) {
-    uniroot(function(cq) {
-      sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
-            dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
-      lower = qnorm(alpha, mean = means[N0end], sd = sigma),
-      upper = qnorm(alpha, mean = means[N0start], sd = sigma))$root
-  }
-  res = mapply(quant, conc = concentrations, N0start = N0starts, N0end = N0ends)
-  return(res)
-}
-
-#' Faster Estimation of Theoretical Quantiles for Cq Values
-#'
-#' Given ESC model parameters, quantile level alpha, and concentration conc,
-#' estimates that alpha-th quantile of the theoretical distribution of Cq values
-#' at the specified concentration. For efficiency, ensures that a maximum of 100
-#' N0 values are considered when the computation is performed. N0 values used for
-#' computation are equally spaced out between the computed lower and upper bounds,
-#' and are used to estimate contribution of nearby N0 values not included in the
-#' computation.
-#'
-#' @param concentrations numeric concentration at which to evaluate specified
-#' quantile
-#' @param alpha quantile level
-#' @param intercept intercept parameter of ESC model
-#' @param slope slope parameter of ESC model
-#' @param sigma sigma parameter of ESC model
-#'
-#' @return estimate of specified quantile
-cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
-  #determine N0 values at which to perform evaluation
-  N0start <- max(qpois(1e-15, conc), 1)
-  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
-  granularity <- ceiling((N0end - N0start)/100)
-  N0s <- seq(N0start, N0end, by = granularity)
-
-  #compute quantile
-  uniroot(function(cq) {
-    sum(pnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
-          dpois(N0s, conc) * granularity) - alpha * (1 - exp(-conc))},
-    upper = qnorm(alpha, mean = intercept + slope * log(N0start), sd = sigma),
-    lower = qnorm(alpha, mean = intercept + slope * log(N0end), sd = sigma))$root
-}
 
 #' Fit ESC Model Using MLE
 #'
@@ -190,7 +121,6 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 #' contain a column named "concentrations" with known sample concentrations, and
 #' a column named "cqs" with corresponding Cq values. Non-detects should be
 #' encoded by a Cq value of NaN
-#' @param PI Numeric. Width of the probability interval.
 #' @param approximate logical. If TRUE (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
 #' concentrations
@@ -225,10 +155,6 @@ esc_mle <- function(esc_data, PI = 0.95, approximate = TRUE) {
   if(length(concentrations) != length(cqs)) {
     stop("concentrations and cqs must be the same length")
   }
-
-  if(!is.numeric(PI)) {stop("PI must be numeric")}
-  if(PI > 1 | PI < 0) {stop("PI must be between 0 and 1")}
-
   if(!is.logical(approximate)) {stop("approximate must be logical")}
 
   # --- Filter out the non-detects
@@ -255,27 +181,9 @@ esc_mle <- function(esc_data, PI = 0.95, approximate = TRUE) {
   slope     = res$estimate[2]
   sigma     = res$estimate[3]
 
-  # --- Quantiles for Cq values
-
-  alphas = c(0.5 - PI/2, 0.5, 0.5 + PI/2)
-
-  cq.quants = lapply(X = alphas,
-                     FUN = ifelse(approximate,
-                                  Vectorize(cq_quantile_est, "conc"),
-                                  cq_quantile),
-                     concentrations,
-                     intercept = intercept,
-                     slope = slope,
-                     sigma = sigma)
-
-  names(cq.quants) = c('low', 'median', 'high')
-
-
   m = new_esc(intercept = res$estimate[1],
               slope = res$estimate[2],
               sigma = res$estimate[3],
-              cq_quantiles = as.data.frame(cq.quants),
-              cq_quantiles_PI = PI,
               data = data.frame(concentrations = concentrations,
                                 cqs = cqs))
   return(m)

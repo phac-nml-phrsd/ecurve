@@ -70,7 +70,7 @@ library(ecurve)
 Now, let's fit the ESC model to the data
 
 ```{r model_fit, warning=FALSE}
-model <- esc_mle(fit.data, PI = 0.95)
+model <- esc_mle(fit.data)
 ```
 
 The maximum likelihood estimates for the ESC model parameter are:
@@ -81,9 +81,9 @@ model$sigma
 model$eff
 ```
 
-The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` when fitting the model) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. The plot is returned by the function as a `ggplot` object.
+The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` to the plotting function) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. The plot is returned by the function as a `ggplot` object.
 ```{r plot_esc_model, fig.width=6}
-plot_esc_model(model)
+plot_esc_model(model, PI = 0.95)
 ```
 
 As expected, most of the data lie within the light blue region, indicating that the model is accurately capturing the variability in the data.
