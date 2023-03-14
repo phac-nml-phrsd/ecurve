@@ -9,5 +9,5 @@ See the introductory vignette shipped with the package for more details.
 
 Use the `devtools` library to install `ecurve`: 
 
-`devtools::install_github(repo="/phac-nml-phrsd/ecurve", build_vignettes = TRUE)`
+`devtools::install_github(repo="phac-nml-phrsd/ecurve", build_vignettes = TRUE)`
 
