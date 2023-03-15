@@ -12,7 +12,7 @@ conc_log_likelihood_factory <- function(cqs, model) {
 
   # --- unpack
   intercept = model$intercept
-  slope     = model$slope
+  slope     = model$slope / log(10)
   sigma     = model$sigma
 
   # --- Identify non-detects (if any)
@@ -93,7 +93,8 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
   # --- Compute MLE
   if(approximate){
     conc_log_like <- function(conc) {
-      log_likelihood_est(conc, cqs, model$intercept, model$slope, model$sigma)
+      log_likelihood_est(conc, cqs, model$intercept, model$slope / log(10),
+                         model$sigma)
     }
   }
   else {
@@ -102,7 +103,7 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
 
   res = nlm(
     f = conc_log_like,
-    p = exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope) )
+    p = exp((mean(cqs, na.rm = TRUE) - model$intercept) * log(10)/model$slope) )
 
   return(res$estimate)
 }
@@ -152,7 +153,8 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
   # --- Compute MLE
   if(approximate){
     conc_log_like <- function(conc) {
-      log_likelihood_est(conc, cqs, model$intercept, model$slope, model$sigma)
+      log_likelihood_est(conc, cqs, model$intercept, model$slope / log(10),
+                         model$sigma)
     }
   }
   else {
@@ -160,11 +162,12 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
   }
 
   mle <- nlm(conc_log_like,
-             exp((mean(cqs, na.rm = TRUE) - model$intercept)/model$slope))$estimate
+             exp((mean(cqs, na.rm = TRUE) - model$intercept) *
+                   log(10)/model$slope))$estimate
 
   # Compute bounds for numerical intergration
   threshold <- conc_log_like(mle) + 9 * log(10)
-  root_est_factor <- exp(4 * model$sigma / abs(model$slope))
+  root_est_factor <- exp(9.21 * model$sigma / abs(model$slope))
   lb <- uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
                 lower = mle / root_est_factor, extendInt = "downX")$root
   ub <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,

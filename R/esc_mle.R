@@ -182,7 +182,7 @@ esc_mle <- function(esc_data, PI = 0.95, approximate = TRUE) {
   sigma     = res$estimate[3]
 
   m = new_esc(intercept = res$estimate[1],
-              slope = res$estimate[2],
+              slope = res$estimate[2] * log(10),
               sigma = res$estimate[3],
               data = data.frame(concentrations = concentrations,
                                 cqs = cqs))

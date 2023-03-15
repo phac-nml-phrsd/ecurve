@@ -173,7 +173,7 @@ plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
                                   cq_quantile),
                      concentrations,
                      intercept = model$intercept,
-                     slope = model$slope,
+                     slope = model$slope / log(10),
                      sigma = model$sigma)
 
   names(cq_quants) <- c('low', 'median', 'high')

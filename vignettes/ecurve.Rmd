@@ -26,10 +26,25 @@ The initial number of gene copies in a given reaction, $N_0$, is modeled as a Po
 $$N_0 \sim Poisson(\lambda)$$ 
 where $\lambda$ is the concentration of the gene in the sample from which the reaction was prepared. 
 
-The case of $N_0 = 0$ is assumed to correspond to non-detects, that is, every reaction beginning with $N_0 = 0$ will produce a non-detect, and any observed non-detects are assumed to have been generated in this manner. Otherwise, as in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qPCR has a linear relationship with $\log N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$:
+The case of $N_0 = 0$ is assumed to correspond to non-detects, that is, every reaction beginning with $N_0 = 0$ will produce a non-detect, and any observed non-detects are assumed to have been generated in this manner. Otherwise, as in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qPCR has a linear relationship with $\log_{10} N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$:
 
-$$C_q | N_0 \sim N(\alpha + \beta \log N_0, \sigma^2)$$ 
+$$C_q | N_0 \sim N(\alpha + \beta \log_{10} N_0, \sigma^2)$$ 
 Together, these assumptions fully determine the probability of detection and the expected distribution of $C_q$ values conditional on detection for any sample concentration, and hence fully specify the model. The `ecurve` package provides mechanisms for fitting the model based on qPCR data from samples of known concentration via maximum likelihood estimation (MLE) of the (a priori) unknown parameters $\alpha$, $\beta$ and $\sigma$.
+
+We also note that as in traditional standard curve analysis, the slope parameter $\beta$ can be given a theoretical interpretation by relating it to the PCR efficiency $E$, which is defined as the average number of gene copies duplicated during each PCR cycle. For a reacion with $N_0$ initial gene copies, the number of gene copies after $c$ cycles id given by $N_0(1 + E)^c$. Thus, since the $C_q$ value is a measurement of the number of cycles required to reach some threshold number $N_f$ of gene copies, we have
+
+$$N_f = N_0(1 + E)^{C_q}$$
+Taking logarithms on both sides and sloving for $C_q$ in terms of $N_0$, we obtain
+
+$$C_q = \frac{\log_{10} N_f}{\log_{10}(1 + E)} - \frac{1}{\log_{10}(1 + E)}\log_{10}N_0$$
+Thus, the slope parameter $\beta$ is given by
+
+$$\beta = - \frac{1}{\log_{10}(1 + E)}$$
+
+and therefore the PCR efficiency $E$ is given by
+
+$$E = 10^{-1/\beta} - 1$$
+Also, note that since the PCR effiency is constrained by $0 < E < 1$, it follows that the slope parameter is constrained by $0 > \beta > -\frac{1}{\log_{10} 2} \approx -3.32$
 
 The package provides functionality for performing the MLE via the `esc_mle()` function, for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle` function, and for using Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate via the `conc_interval()` function. 
 
@@ -58,9 +73,9 @@ test.data$cqs <- as.numeric(test.data$cqs)
 
 ## Model Fitting
 
-To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe containing data on the known concentrations and $C_q$ values used to calibrate the model, as well as an optional parameter `PI` that controls the width of the credible interval displayed when plotting the model (defaults to 95%). 
+To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe containing data on the known concentrations and $C_q$ values used to calibrate the model.
 
-The model is fit using MLE, and the function returns an object containing the fitted model parameters $\alpha$ (named as `intercept`), $\beta$ (named as `slope`) and $\sigma$ (named as `sigma`); `eff`, an estimate of the qPCR efficiency; `data`, a copy of the original data; and additional information to facilitate plotting.
+The model is fit using MLE, and the function returns an object containing the fitted model parameters $\alpha$ (named as `intercept`), $\beta$ (named as `slope`) and $\sigma$ (named as `sigma`); `eff`, an estimate of the qPCR efficiency; and `data`, a copy of the original data.
 
 First, the `ecurve` library is loaded:
 ```{r load_library }
@@ -81,7 +96,7 @@ model$sigma
 model$eff
 ```
 
-The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` to the plotting function) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. The plot is returned by the function as a `ggplot` object.
+The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` to the plotting function) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. Note that non-detects are not represented in this plot in any way, however, their presence does not actually affect the model fit since their likelihood is independent of all of the model parameters. The plot is returned by the function as a `ggplot` object.
 ```{r plot_esc_model, fig.width=6}
 plot_esc_model(model, PI = 0.95)
 ```
