@@ -16,28 +16,43 @@ knitr::opts_chunk$set(
 
 ## Introduction and Background
 
-This document provides an introduction to `ecurve`, an R library that implements the Enhanced Standard Curve (ESC) model for constructing qPCR "standard curves".
+This document provides an introduction to `ecurve`, an R library that implements the Enhanced Standard Curve (ESC) model for constructing qPCR standard curves and producing concentration estimates from qPCR data using such curves. Unlike more traditional methods of standard curve construction, the ESC Model additionally allows for the quantification of the uncertainty in these estimates through the construction of Bayesian credible intervals. As it is primarily indented to provide an introduction to the `ecurve` package, this vignette only provides a brief overview of the ESC model; for a more detailed discussion of the theory and motivation behind the model, consult [this paper](https://doi.org/10.3389/fmicb.2023.1048661)
 
-The remainder of this section provides a brief description of the ESC model, while later sections illustrate the application of the model, through the `ecurve` package, to an example qPCR dataset. The same dataset will also be analyzed using established standard curve methods, in order to show the contrast between the two approaches.
+The remainder of this section provides a brief description of the ESC model, while later sections illustrate the application of the model through the `ecurve` package, to an example qPCR dataset. The same dataset will also be analyzed using established standard curve methods in order to show the contrast between the two approaches.
 
-The ESC model is a hierarchical model that attempts to capture the randomness inherent in both the number of gene copies from a sample that end up in a particular well and in the $C_q$ value that results from running qPCR on a well with a given initial number of gene copies. 
+The ESC model is a hierarchical model that attempts to capture the randomness inherent in both the number of gene copies from a sample that end up in a particular well and in the $C_q$ value that results from running qPCR on a reaction with a given initial number of gene copies. 
 
-The initial number of gene copies in a given well, $N_0$, is modeled as a Poisson distribution 
+The initial number of gene copies in a given reaction, $N_0$, is modeled as a Poisson distribution 
 $$N_0 \sim Poisson(\lambda)$$ 
-where $\lambda$ is the concentration of the gene in the sample from which the well was drawn. 
+where $\lambda$ is the concentration of the gene in the sample from which the reaction was prepared. 
 
-If $N_0 = 0$, this is assumed to lead to a non-detect. Otherwise, as in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qPCR has a linear relationship with $\log N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$:
+The case of $N_0 = 0$ is assumed to correspond to non-detects, that is, every reaction beginning with $N_0 = 0$ will produce a non-detect, and any observed non-detects are assumed to have been generated in this manner. Otherwise, as in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qPCR has a linear relationship with $\log_{10} N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$:
 
-$$C_q \sim N(\alpha + \beta \log N_0, \sigma^2)$$ 
-Together, these assumptions fully determine the expected distribution of $C_q$ values for any sample concentration, and hence fully specify the model. The `ecurve` package provides mechanisms for fitting the model based on qPCR data from samples of known concentration via maximum likelihood estimation (MLE) of the (a priori) unknown parameters $\alpha$, $\beta$ and $\sigma$.
+$$C_q | N_0 \sim N(\alpha + \beta \log_{10} N_0, \sigma^2)$$ 
+Together, these assumptions fully determine the probability of detection and the expected distribution of $C_q$ values conditional on detection for any sample concentration, and hence fully specify the model. The `ecurve` package provides mechanisms for fitting the model based on qPCR data from samples of known concentration via maximum likelihood estimation (MLE) of the (a priori) unknown parameters $\alpha$, $\beta$ and $\sigma$.
 
-The MLE is performed using the `esc_mle()` function, for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle` function, and for using Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate via the `conc_interval()` function. 
+We also note that as in traditional standard curve analysis, the slope parameter $\beta$ can be given a theoretical interpretation by relating it to the PCR efficiency $E$, which is defined as the average number of gene copies duplicated during each PCR cycle. For a reacion with $N_0$ initial gene copies, the number of gene copies after $c$ cycles id given by $N_0(1 + E)^c$. Thus, since the $C_q$ value is a measurement of the number of cycles required to reach some threshold number $N_f$ of gene copies, we have
+
+$$N_f = N_0(1 + E)^{C_q}$$
+Taking logarithms on both sides and sloving for $C_q$ in terms of $N_0$, we obtain
+
+$$C_q = \frac{\log_{10} N_f}{\log_{10}(1 + E)} - \frac{1}{\log_{10}(1 + E)}\log_{10}N_0$$
+Thus, the slope parameter $\beta$ is given by
+
+$$\beta = - \frac{1}{\log_{10}(1 + E)}$$
+
+and therefore the PCR efficiency $E$ is given by
+
+$$E = 10^{-1/\beta} - 1$$
+Also, note that since the PCR effiency is constrained by $0 < E < 1$, it follows that the slope parameter is constrained by $0 > \beta > -\frac{1}{\log_{10} 2} \approx -3.32$
+
+The package provides functionality for performing the MLE via the `esc_mle()` function, for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle` function, and for using Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate via the `conc_interval()` function. 
 
 The functions `plot_esc_data()`, `plot_esc_model()` and `plot_conc_int()` are also provided to help visualize the results of these analyses.
 
 ## Data
 
-The data used for this example analysis is located in two csv files: `esc-fit-data.csv` and `esc_test-data.csv`. 
+The data used for this example analysis is located in two csv files: `esc-fit-data.csv` and `esc-test-data.csv`. 
 
 The dataset `esc-fit-data.csv` contains data for fitting the model, and contains two columns, a `concentrations` column containing known sample concentrations, and a `cqs` column containing the corresponding $C_q$ value obtained in a qPCR run. 
 
@@ -48,7 +63,7 @@ We now proceed to load the data:
 fit.data  <- read.csv("esc-fit-data.csv")
 test.data <- read.csv("esc-test-data.csv")
 ```
-In the datasets, non-detects are encoded by a $C_q$ value of "ND", which also results in the cqs values being interpreted as strings. However, the `ecurve` package requires the cqs values to be numeric with non-detects coded as `NaN`, so the data must be modified to fit this standard before the analysis is run.
+In the datasets, non-detects are encoded as a $C_q$ value of "ND", which also results in the `cqs` values being interpreted as strings. However, the `ecurve` package requires the `cqs` values to be numeric with non-detects coded as `NaN`, so the data must be modified accordingly before the analysis is run.
 ```{r}
 fit.data$cqs[which(fit.data$cqs == "ND")] <- NaN
 fit.data$cqs <- as.numeric(fit.data$cqs)
@@ -58,11 +73,11 @@ test.data$cqs <- as.numeric(test.data$cqs)
 
 ## Model Fitting
 
-To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe containing data on the known concentrations and $C_q$ values used to calibrate the model, as well as an optional parameter `CI` that controls the width of the credible interval displayed when plotting the model (defaults to 95%). 
+To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe containing data on the known concentrations and $C_q$ values used to calibrate the model.
 
-The model is fit using MLE, and the function returns an object containing the fitted model parameters, `eff`, an estimate of the qPCR efficiency, `data`, a copy of the original data, and additional information to facilitate plotting.
+The model is fit using MLE, and the function returns an object containing the fitted model parameters $\alpha$ (named as `intercept`), $\beta$ (named as `slope`) and $\sigma$ (named as `sigma`); `eff`, an estimate of the qPCR efficiency; and `data`, a copy of the original data.
 
-First, let's make sure the `ecurve` library is loaded:
+First, the `ecurve` library is loaded:
 ```{r load_library }
 library(ecurve)
 ```
@@ -70,10 +85,10 @@ library(ecurve)
 Now, let's fit the ESC model to the data
 
 ```{r model_fit, warning=FALSE}
-model <- esc_mle(fit.data, CI = 0.95)
+model <- esc_mle(fit.data)
 ```
 
-The maximum likelihood estimations for the ESC model parameter are:
+The maximum likelihood estimates for the ESC model parameter are:
 ```{r MLE_results}
 model$intercept
 model$slope
@@ -81,22 +96,27 @@ model$sigma
 model$eff
 ```
 
-As such, these MLE estimates are not directly useful. We will see how this fitted model will be used to directly estimate concentrations form $C_q$ values measured from new samples.
-
-The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The black points represent the datapoints used to fit the model, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `CI` when fitting the model) for the $C_q$ values given the fitted model prarmeters. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. The plot is returned by the function as a `ggplot` object.
+The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` to the plotting function) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. Note that non-detects are not represented in this plot in any way, however, their presence does not actually affect the model fit since their likelihood is independent of all of the model parameters. The plot is returned by the function as a `ggplot` object.
 ```{r plot_esc_model, fig.width=6}
-plot_esc_model(model)
+plot_esc_model(model, PI = 0.95)
 ```
 
-Note that, with the exception of a few outliers, all of the datapoints lie within the light blue region, indicating that the model is accurately capturing the variability in the data.
+As expected, most of the data lie within the light blue region, indicating that the model is accurately capturing the variability in the data.
 
-For contrast, we also illustrate fitting a simple linear model regressing $C_q$ on log concentration as in traditional standard curve analysis. To visualize this model, we use the `plot_esc_data()` and then manually add the regression line (using `ggplot` built-in regression):
+For contrast, we also illustrate fitting a simple linear model regressing $C_q$ against log concentration as in traditional standard curve analysis. To visualize this model, we use the `plot_esc_data()` function and then manually add the regression line (using `ggplot` built-in regression), along with a probability interval for the regression defined in the same way as the one for the ESC model:
 ```{r linear_regression, warning=FALSE, fig.width=6}
+sd <- sigma(lm(cqs ~ concentrations, data = fit.data))
 plot_esc_data(fit.data) + 
-  ggplot2::geom_smooth(method = 'lm', formula = 'y~x', se = FALSE)
+  ggplot2::geom_smooth(method = 'lm', formula = 'y~x', se = FALSE) +
+  ggplot2::geom_ribbon(ggplot2::aes(ymin = ggplot2::after_stat(y) -
+                                        qnorm(0.975) * sd,
+                                      ymax = ggplot2::after_stat(y) +
+                                        qnorm(0.975) * sd),
+                       stat = "smooth", method = 'lm', formula = 'y~x',
+                       fill = 'steelblue2', alpha = 0.2)
 ```
 
-Note the difference of the functional relationship at low concentrations. The naive linear regression cannot account for the greater spread in $C_q$ values observed at lower concentrations, or indeed meaningfully quantify that spread at all.
+Note the difference of the functional relationship at low concentrations. The naive linear regression cannot account for the greater spread in $C_q$ values observed at lower concentrations as compared to the speard observed a higher concentrations, instead assuming that the spread is constant at all concentration values. This results in the variability being overestimated at high concentrations, as illustrated by the much greater width of the probability interval at these value when compared to the probability interval generated by the ESC model. Furthermore, this model suffers from the additional limitation that it cannot account for non-detects in a natural way (in this case, the non-detects are simply dropped as missing data before fitting the model).
 
 
 
@@ -113,7 +133,7 @@ samp8_cqs
 ```
 
 Notice that sample 7 contains multiple non-detects, and sample 8 is in fact all non-detects. However, no special measures need to be taken to account for this, as the ESC model smoothly incorporates non-detects into the concentration estimation procedure. 
-Concentration estimates can be obtained using the `conc_mle()` function, produces them using MLE given a set of $C_q$ values from technical replicates and the model fitted in the previous section:
+Concentration estimates can be obtained using the `conc_mle()` function, which produces them using MLE given a set of $C_q$ values from technical replicates and the model fitted in the previous section:
 
 ```{r, warning=FALSE}
 conc_mle(samp3_cqs, model = model)
@@ -121,9 +141,9 @@ conc_mle(samp7_cqs, model = model)
 conc_mle(samp8_cqs, model = model)
 ```
 
-The function `conc_mle()` provides the "best" estimates, according to the MLE method (ie the parameter value that maximisethe likelihood of the data). 
-We can also quantify the uncertainty in these estmates using the `conc_interval()` function. This function uses numerical Bayesian estimation to compute the posterior concentration distribution given the $C_q$ data and fitted model, assuming a uniform prior, and construct a credible interval for the concentration. 
-The credible level of the interval can be controlled using the optional `level` parameter. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval
+The function `conc_mle()` provides the "best" estimates, according to the MLE method (i.e. the parameter value that maximize the likelihood of the data). 
+We can also quantify the uncertainty in these estimates using the `conc_interval()` function. This function uses numerical Bayesian estimation to compute the posterior concentration distribution given the $C_q$ data and fitted model, assuming a uniform prior, and construct a credible interval for the concentration. 
+The credible level of the interval can be controlled using the optional `level` parameter, which defaults to 0.95 if not specified. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval
 ```{r concentration_intervals}
 samp3_int <- conc_interval(samp3_cqs, model = model)
 samp7_int <- conc_interval(samp7_cqs, model = model)
@@ -133,97 +153,8 @@ samp3_int$interval
 samp7_int$interval
 samp8_int$interval
 ```
-These intervals can also be visualized using the `plot_conc_int()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter type, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brievity, this is only illustrated for sample 7.
+These intervals can also be visualized using the `plot_conc_int()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter `type`, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brievity, this is only illustrated for sample 7.
 ```{r plot_concetration_pdf, fig.width=8}
 plot_conc_int(samp7_int, type = "pdf")
 plot_conc_int(samp7_int, type = "cdf")
 ```
-
-
-For comparison, we also compute concentration estimates using the "traditional" method based on the linear model fitted earlier. We plot the "traditional" estimates with the ESC estimates: 
-
-```{r, echo=FALSE}
-# Naive linear model:
-
-fit.data$logconc = log(fit.data$concentrations)
-
-lin_mod <- lm(cqs ~ logconc, data = fit.data)
-intercept.m = lin_mod$coef[1]
-slope.m     = lin_mod$coef[2]
-sigma.m     = sigma(lin_mod)
-
-# Calculate confidence intervals of the linear regression
-lin_ci = confint(lin_mod)
-intercept.lo = lin_ci[1,1]
-intercept.hi = lin_ci[1,2]
-slope.hi     = lin_ci[2,1]
-slope.lo     = lin_ci[2,2]
-
-# Inferred concentrations:
-samp3_mean_cq <- mean(samp3_cqs, na.rm = TRUE)
-samp7_mean_cq <- mean(samp7_cqs, na.rm = TRUE)
-samp3_conc    <- unname(exp((samp3_mean_cq - intercept.m)/slope.m))
-samp7_conc    <- unname(exp((samp7_mean_cq - intercept.m)/slope.m))
-
-get_lin_ci <- function(cqs, intercept, slope, sigma) {
-  cqs <- cqs[!is.nan(cqs)]
-  mean_cq <- mean(cqs)
-  limit <- qnorm(1e-9, mean = 0, sd = sigma, lower.tail = FALSE)
-  lb <- exp((mean_cq + limit - intercept)/slope)
-  ub <- exp((mean_cq - limit - intercept)/slope)
-  grid <- seq(lb, ub, length.out = 1001)
-  pdf <- sapply(grid, FUN = function(conc) {
-    prod(dnorm(cqs, mean = intercept + slope * log(conc), sd = sigma))
-  })
-  cdf <- cumsum(pdf)
-  limits <- c(0.025, 0.975) * cdf[1001]
-  res <- approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
-  names(res) <- c("lwr", "upr")
-  return(res)
-}
-
-lin.ci.3 = get_lin_ci(samp3_cqs, intercept.m, slope.m, sigma.m)
-lin.ci.7 = get_lin_ci(samp7_cqs, intercept.m, slope.m, sigma.m)
-
-```
-
-
-``` {r, plot_comparison, echo = FALSE, fig.width = 7}
-
-col.segm = 'red3'
-alpha.segm = 0.5
-lw.segm = 3
-
-g = plot_esc_model(model) + 
-  ggplot2::geom_hline(yintercept = c(samp3_mean_cq, samp7_mean_cq),
-                      linetype = 'dashed', color = 'grey50')+
-  # -- ESC model
-  ggplot2::annotate("segment", 
-                    x = samp3_int$interval$lower, xend = samp3_int$interval$upper,
-                    y = samp3_mean_cq, yend = samp3_mean_cq, 
-                    color="black", linewidth = lw.segm/2, alpha = alpha.segm)+
-  ggplot2::annotate("segment", 
-                    x = samp7_int$interval$lower, xend = samp7_int$interval$upper,
-                    y = samp7_mean_cq, yend = samp7_mean_cq, 
-                    color="black", linewidth = lw.segm/2, alpha = alpha.segm)+
-  # -- linear model
-  ggplot2::annotate("segment", 
-                    x = lin.ci.3['lwr'], xend = lin.ci.3['upr'],
-                    y = samp3_mean_cq, yend = samp3_mean_cq, 
-                    color=col.segm, linewidth = lw.segm, alpha = alpha.segm)+
-  ggplot2::annotate("segment", 
-                    x = lin.ci.7['lwr'], xend = lin.ci.7['upr'],
-                    y = samp7_mean_cq, yend = samp7_mean_cq, 
-                    color=col.segm, linewidth = lw.segm, alpha = alpha.segm)+
-  ggplot2::labs(title = 'Comparison ESC vs. traditional linear regression', subtitle = NULL)
-plot(g)
-
-```
-
-The horizontal dashed line shows the mean $C_q$ values, for samples 3 and 7, used for the traditional linear regression and the red segments represents the 95% credible intervals for the associated concentrations with that model, generated using bayesean techinques similar to those empolyed by the `ecurve` package.
-
-The dark gray segments represent the 95% credible intervals for samples 3 and 7 using the ESC model. 
-
-While the central estimates are similar at high concentrations, at low concentrations the central estimate generated by the ESC model appears to be slightly lower than that generated by the traditional linear model, likely because of the incorperation of non-detects into ESC model estimation, where they provide evidence of a lower concentration. Additionally, the ESC model implies a higher uncertaintly then the linear model at low concentrations and a lower uncertainty than the linear model at high concentrations. This is likely more reflective of reality, as the ESC model can account for changes in the variability of the data at different concentraitions, while the linear model assumes equal variability at all concentrations, causing it to underestimate the variability at low concentrations and overestimate it at high concentrations.
-
-We also note that no estimate can be generated by the traditional linear regression for sample 8 at all since all the replicates are non-detects whereas it is possible for the ESC model.
