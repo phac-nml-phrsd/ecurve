@@ -1,0 +1,12 @@
+test_that("simulation input checks work", {
+  expect_error(sim_cqs(c(1, "a"), 1, 1, 1), "concentrations must be numeric")
+  expect_error(sim_cqs(c(1, -1), 1, 1, 1), "concentrations must be non-negative")
+  expect_error(sim_cqs(c(1, 1), "a", 1, 1), "eff must be numeric")
+  expect_error(sim_cqs(c(1, 1), 1, "a", 1), "cq1 must be numeric")
+  expect_error(sim_cqs(c(1, 1), 1, 1, "a"), "sigma must be numeric")
+  expect_error(sim_cqs(c(1, 1), -5, 1, 1), "invalid efficiency")
+  expect_error(sim_cqs(c(1, 1), 1, Inf, 1), "invalid intercept")
+  expect_error(sim_cqs(c(1, 1), 1, 1, -5), "invalid sigma")
+  expect_warning(sim_cqs(c(1, 1), 1.5, 1, 1), "efficiency greater than 1")
+  expect_warning(sim_cqs(c(1, 1), 1, -5, 1), "negative intercept")
+})
