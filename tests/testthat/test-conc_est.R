@@ -4,13 +4,13 @@ test_that("concentration MLE works", {
   sigma <- 0.5
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   expect_true(abs(conc_mle(data, model) - conc)/conc < 0.5)
   conc <- 500
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   expect_true(abs(conc_mle(data, model) - conc)/conc < 0.5)
   conc <- 1.5
-  data <- sim_cqs(c(conc, conc, conc, conc, conc, conc), eff = E, cq1 = intercept,
+  data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
   expect_true(abs(conc_mle(data, model) - conc)/conc < 0.5)
 })
@@ -21,7 +21,7 @@ test_that("concentration interval estimation works", {
   sigma <- 0.5
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   int <- conc_interval(data, model)
   expect_s3_class(int, "conc_int")
   expect_true((int$interval$mle - conc)/conc < 0.5)
@@ -32,14 +32,14 @@ test_that("concentration interval estimation works", {
   expect_true(int1$interval$upper > int$interval$upper)
   expect_true(int1$interval$lower < int$interval$lower)
   conc <- 500
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   int <- conc_interval(data, model)
   expect_s3_class(int, "conc_int")
   expect_true((int$interval$mle - conc)/conc < 0.5)
   expect_true(int$interval$upper > int$interval$mle)
   expect_true(int$interval$lower < int$interval$mle)
   conc <- 1.5
-  data <- sim_cqs(c(conc, conc, conc, conc, conc, conc), eff = E, cq1 = intercept,
+  data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
   int <- conc_interval(data, model)
   expect_s3_class(int, "conc_int")
@@ -54,13 +54,13 @@ test_that("concentration MLE works when approximation is turned off", {
   sigma <- 0.5
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 0.5)
   conc <- 500
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 0.5)
   conc <- 1.5
-  data <- sim_cqs(c(conc, conc, conc, conc, conc, conc), eff = E, cq1 = intercept,
+  data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
   expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 0.5)
 })
@@ -71,7 +71,7 @@ test_that("concentration interval estimation works", {
   sigma <- 0.5
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   int <- conc_interval(data, model, approximate = FALSE)
   expect_s3_class(int, "conc_int")
   expect_true((int$interval$mle - conc)/conc < 0.5)
@@ -82,14 +82,14 @@ test_that("concentration interval estimation works", {
   expect_true(int1$interval$upper > int$interval$upper)
   expect_true(int1$interval$lower < int$interval$lower)
   conc <- 500
-  data <- sim_cqs(c(conc, conc, conc), eff = E, cq1 = intercept, sigma = sigma)
+  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   int <- conc_interval(data, model, approximate = FALSE)
   expect_s3_class(int, "conc_int")
   expect_true((int$interval$mle - conc)/conc < 0.5)
   expect_true(int$interval$upper > int$interval$mle)
   expect_true(int$interval$lower < int$interval$mle)
   conc <- 1.5
-  data <- sim_cqs(c(conc, conc, conc, conc, conc, conc), eff = E, cq1 = intercept,
+  data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
   int <- conc_interval(data, model, approximate = FALSE)
   expect_s3_class(int, "conc_int")
