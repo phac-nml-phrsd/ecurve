@@ -4,13 +4,17 @@
 \alias{conc_mle}
 \title{Estimate concentration from Cq values}
 \usage{
-conc_mle(cqs, model)
+conc_mle(cqs, model, approximate = TRUE)
 }
 \arguments{
 \item{cqs}{Numeric vector of Cq values from sample replicates, non-detects
 coded as NaN}
 
 \item{model}{\code{esc} object representing fitted model to use for estimation.}
+
+\item{approximate}{logical. If TRUE (the default), a faster but potentially
+less accurate approximation for the likelihood function will be used at high
+concentrations}
 }
 \value{
 MLE of concentration

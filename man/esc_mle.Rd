@@ -4,7 +4,7 @@
 \alias{esc_mle}
 \title{Fit ESC Model Using MLE}
 \usage{
-esc_mle(esc_data, CI = 0.95)
+esc_mle(esc_data, PI = 0.95, approximate = TRUE)
 }
 \arguments{
 \item{esc_data}{Data frame containing data to be used to fit the model. Must
@@ -12,7 +12,9 @@ contain a column named "concentrations" with known sample concentrations, and
 a column named "cqs" with corresponding Cq values. Non-detects should be
 encoded by a Cq value of NaN}
 
-\item{CI}{Numeric. Width of the confidence interval.}
+\item{approximate}{logical. If TRUE (the default), a faster but potentially
+less accurate approximation for the likelihood function will be used at high
+concentrations}
 }
 \value{
 esc object representing fitted model
