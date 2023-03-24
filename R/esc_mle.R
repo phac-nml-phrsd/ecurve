@@ -130,7 +130,7 @@ esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) 
 #'
 #' @example
 #'
-esc_mle <- function(esc_data, PI = 0.95, approximate = TRUE) {
+esc_mle <- function(esc_data, approximate = TRUE) {
 
   # --- Inputs Checks
 

@@ -187,3 +187,56 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 
   return(res)
 }
+
+#' Compute Multiple Concentration Credible Intervals
+#'
+#' Computes Baysian credible intervals and maximum likelihood estimates for the
+#' concentrations of multiple samples at once, given Cq data for each sample and
+#' a single esc model object and specified credible level to use for all the
+#' intervals.
+#'
+#' @param cq_data data frame with an sample column specifying the names of the
+#' samples from which reactions were generated, and a cqs column containing the
+#' corresponding Cq values. Cq values must be numeric, with non0detects encoded
+#' as NaN.
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credibily level, defaults to 0.95
+#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' less accurate approximation for the likelihood function will be used at high
+#' concentrations
+#'
+#' @return Data frame with an index column specifying the sample index, and lower,
+#' mle, and upper columns specifying the interval lower bound, maximum likelihood
+#' estimate, and interval lower bound for the gene concentration in that sample.
+#' One row is generated for each unique sample index in the original data frame.
+#' @export
+#'
+#' @examples
+multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
+  #input checks
+  if(!"sample" %in% names(cq_data)) {
+    stop("cq_data must contain sample column")
+  }
+  if(!"cqs" %in% names(cq_data)) {
+    stop("esc_data must contain cqs column")
+  }
+  if(!all(is.numeric(cq_data$cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+  if(!is.logical(approximate)) {stop("approximate must be logical")}
+
+  #compute intervals
+  res <- aggregate(cqs ~ sample, data = cq_data, na.action = NULL, FUN =
+                     function(cqs) {
+                       c(conc_interval(cqs, model, level, approximate)$interval)
+                     })
+
+  #reshape result
+  res <- data.frame(sample = res[,1], res[,2])
+  res[] <- lapply(res, unlist)
+  return(res)
+}
