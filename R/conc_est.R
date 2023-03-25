@@ -218,7 +218,7 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
     stop("cq_data must contain sample column")
   }
   if(!"cqs" %in% names(cq_data)) {
-    stop("esc_data must contain cqs column")
+    stop("cq_data must contain cqs column")
   }
   if(!all(is.numeric(cq_data$cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {

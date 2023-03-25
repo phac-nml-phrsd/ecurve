@@ -1,0 +1,51 @@
+test_that("multi_interval works", {
+  intercept <- 38
+  E <- 0.97
+  sigma <- 0.5
+  model <- new_esc(intercept, -1/log10(1 + E), sigma)
+  conc <- 20
+  cqs <- sim_cqs(rep(conc, 5), E, intercept, sigma)
+  df <- data.frame(sample = c(rep(1, 5), rep(2, 3)), cqs = c(cqs, rep(NaN, 3)))
+  res <- multi_interval(df, model)
+  expect_equal(dim(res), c(2, 4))
+  expect_setequal(res$sample, c(1, 2))
+  ind1 <- which(res$sample == 1)
+  ind2 <- which(res$sample == 2)
+  expect_true(abs(res$mle[ind1] - conc)/conc < 0.5)
+  expect_true(res$lower[ind1] < res$mle[ind1])
+  expect_true(res$upper[ind1] > res$mle[ind1])
+  expect_equal(res$mle[ind2], 0)
+  expect_equal(res$lower[ind2], 0)
+  expect_equal(1 - exp(-3 * res$upper[ind2]), 0.95)
+  df <- data.frame(sample = c(rep("a", 5), rep("b", 3)), cqs = c(cqs, rep(NaN, 3)))
+  res <- multi_interval(df, model, level = 0.90, approximate = FALSE)
+  expect_equal(dim(res), c(2, 4))
+  expect_setequal(res$sample, c("a", "b"))
+  ind1 <- which(res$sample == "a")
+  ind2 <- which(res$sample == "b")
+  expect_true(abs(res$mle[ind1] - conc)/conc < 0.5)
+  expect_true(res$lower[ind1] < res$mle[ind1])
+  expect_true(res$upper[ind1] > res$mle[ind1])
+  expect_equal(res$mle[ind2], 0)
+  expect_equal(res$lower[ind2], 0)
+  expect_equal(1 - exp(-3 * res$upper[ind2]), 0.90)
+})
+
+test_that("multi_interval input checks work", {
+  model <- new_esc(38, -1/log(1.97), 0.5)
+  df <- data.frame(index = c(1, 1, 2, 2), cqs = c(1, 2, 1, 2))
+  expect_error(multi_interval(df, model), "cq_data must contain sample column")
+  df <- data.frame(sample = c(1, 1, 2, 2), cps = c(1, 2, 1, 2))
+  expect_error(multi_interval(df, model), "cq_data must contain cqs column")
+  df <- data.frame(sample = c(1, 1, 2, 2), cqs = c(1, 2, "a", 2))
+  expect_error(multi_interval(df, model), "cqs must be numeric")
+  df <- data.frame(sample = c(1, 1, 2, 2), cqs = c(1, 2, -5, 2))
+  expect_error(multi_interval(df, model), "cqs must be non-negative")
+  df <- data.frame(sample = c(1, 1, 2, 2), cqs = c(1, 2, 1, 2))
+  expect_error(multi_interval(df, 5), "model is not an esc object")
+  expect_error(multi_interval(df, model, level = "a"), "level must be numeric")
+  expect_error(multi_interval(df, model, level = 1.5),
+               "level must be between 0 and 1")
+  expect_error(multi_interval(df, model, approximate = "a"),
+               "approximate must be logical")
+})
