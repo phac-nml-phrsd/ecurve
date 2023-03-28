@@ -4,7 +4,7 @@
 \alias{esc_mle}
 \title{Fit ESC Model Using MLE}
 \usage{
-esc_mle(esc_data, PI = 0.95, approximate = TRUE)
+esc_mle(esc_data, approximate = TRUE)
 }
 \arguments{
 \item{esc_data}{Data frame containing data to be used to fit the model. Must
