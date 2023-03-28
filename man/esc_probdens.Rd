@@ -10,7 +10,7 @@ esc_probdens(concentrations, cqs, intercept, slope, sigma)
 \item{concentrations}{numeric vector of specified concentrations}
 
 \item{cqs}{numeric vector containing Cq value at which to compute pdf for
-each specificed concentration, with non-detects coded as NaN}
+each specified concentration, with non-detects coded as NaN}
 
 \item{intercept}{intercept parameter of ESC model}
 

@@ -4,10 +4,16 @@
 \alias{plot_esc_model}
 \title{Plot Fitted ESC Model}
 \usage{
-plot_esc_model(model)
+plot_esc_model(model, PI = 0.95, approximate = TRUE)
 }
 \arguments{
-\item{model}{esc object represeting fitted model}
+\item{model}{esc object representing fitted model}
+
+\item{PI}{Numeric. Width of the probability interval.}
+
+\item{approximate}{logical. If TRUE (the default), a faster but potentially
+less accurate approximation for the likelihood function will be used at high
+concentrations}
 }
 \value{
 ggplot object representing plot

@@ -28,9 +28,15 @@ plot_conc_int <- function(interval, type) {
   point_df <- data.frame(x = xvals, y = yvals, Legend = c("Interval", "MLE", "Interval"))
 
   #Generate plot
-  if(type == "pdf") {fun_mapping <- ggplot2::aes(x = concentration, y = pdf)}
-  else {fun_mapping <- ggplot2::aes(x = concentration, y = cdf)}
-  plot <- ggplot2::ggplot(interval$distribution, fun_mapping) +
+  if(type == "pdf") {
+    fun_mapping <- ggplot2::aes(x = concentration, y = pdf)
+    label <- ggplot2::ylab("Probability Density")
+  }
+  else {
+    fun_mapping <- ggplot2::aes(x = concentration, y = cdf)
+    label <- ggplot2::ylab("Cumulative Probability")
+  }
+  plot <- ggplot2::ggplot(interval$distribution, fun_mapping) + label +
     ggplot2::geom_line() +
     ggplot2::geom_segment(data = point_df,
                           mapping = ggplot2::aes(x = x, y = 0, xend = x,

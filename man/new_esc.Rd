@@ -4,14 +4,7 @@
 \alias{new_esc}
 \title{Create New esc Object}
 \usage{
-new_esc(
-  intercept,
-  slope,
-  sigma,
-  cq_quantiles = cq_quantiles,
-  cq_quantiles_CI = cq_quantiles_CI,
-  data = NULL
-)
+new_esc(intercept, slope, sigma, data = NULL)
 }
 \arguments{
 \item{intercept}{intercept parameter of ESC model}
@@ -19,10 +12,6 @@ new_esc(
 \item{slope}{slope parameter of ESC model}
 
 \item{sigma}{sigma parameter of ESC model}
-
-\item{cq_quantiles}{Dataframe of quantiles for the Cq values}
-
-\item{cq_quantiles_CI}{Numeric. Confidence interval width (quantiles will be 0.5 +/- CI/2)}
 
 \item{data}{data frame containing concentration and cq values used to fit the
 model. Optional parameter, defaults to NULL if not provided.}

@@ -4,7 +4,7 @@
 \alias{esc_log_likelihood}
 \title{Log Likelihood function for ESC Modle fitting}
 \usage{
-esc_log_likelihood(params, concentrations, cqs)
+esc_log_likelihood(params, concentrations, cqs, approximate = TRUE)
 }
 \arguments{
 \item{params}{numeric vector containing parameters of the model: first
@@ -15,9 +15,13 @@ fit to}
 
 \item{cqs}{numeric vector containing Cq value for each specified concentration,
 with non-detects coded as NaN}
+
+\item{approximate}{logical. If TRUE (the default), a faster but potentially
+less accurate approximation for the likelihood function will be used at high
+concentrations}
 }
 \value{
-negative log likelihood evalueated at the given parameters
+negative log likelihood evaluated at the given parameters
 }
 \description{
 Log Likelihood function for ESC Modle fitting

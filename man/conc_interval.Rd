@@ -4,7 +4,7 @@
 \alias{conc_interval}
 \title{Generate credible interval for concentration analytically}
 \usage{
-conc_interval(cqs, model, level = 0.95)
+conc_interval(cqs, model, level = 0.95, approximate = TRUE)
 }
 \arguments{
 \item{cqs}{Numeric vector of Cq values from sample replicates, non-detects
@@ -13,6 +13,10 @@ coded as NaN}
 \item{model}{esc object representing fitted model to use for estimation}
 
 \item{level}{Desired credibily level, defaults to 0.95}
+
+\item{approximate}{logical. If TRUE (the default), a faster but potentially
+less accurate approximation for the likelihood function will be used at high
+concentrations}
 }
 \value{
 conc_int object, containing a list interval specifying the lower and
