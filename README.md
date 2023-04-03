@@ -1,4 +1,7 @@
 # ecurve
+
+[![codecov](https://codecov.io/gh/phac-nml-phrsd/ecurve/branch/main/graph/badge.svg?token=HKCD5AE7KP)](https://codecov.io/gh/phac-nml-phrsd/ecurve)
+
 Enhanced Standard Curve Model
 
 This R library implements a statistical model ([Schmidt et al. 2022](https://www.frontiersin.org/articles/10.3389/fmicb.2023.1048661/full) )  that provides an improved representation of qPCR assays standard curve data at low concentrations while converging asymptotically upon conventional log-linear regression at high concentrations.
