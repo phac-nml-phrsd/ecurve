@@ -1,0 +1,11 @@
+model {
+  for(i in 1:n) {
+    ND[i] ~ dbern(probND[index[i]])
+    N0[i] ~ dpois(conc[index[i]]) T(1,)
+    cq[i] ~ dnorm(ifelse(ND[i] == 0, alpha + beta * log(N0[i]), -100), 1/sigma^2)
+  }
+  for(i in i:k) {
+    probND[i] <- exp(-conc[i])
+    conc[i] ~ dunif(0, 1000000)
+  }
+}
