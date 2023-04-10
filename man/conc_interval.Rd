@@ -12,7 +12,7 @@ coded as NaN}
 
 \item{model}{esc object representing fitted model to use for estimation}
 
-\item{level}{Desired credibily level, defaults to 0.95}
+\item{level}{Desired credible level, defaults to 0.95}
 
 \item{approximate}{logical. If TRUE (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high

@@ -117,7 +117,7 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
 #' coded as NaN
 #' @param model esc object representing fitted model to use for estimation
-#' @param level Desired credibily level, defaults to 0.95
+#' @param level Desired credible level, defaults to 0.95
 #' @param approximate logical. If TRUE (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
 #' concentrations
@@ -193,14 +193,14 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 #' Computes Baysian credible intervals and maximum likelihood estimates for the
 #' concentrations of multiple samples at once, given Cq data for each sample and
 #' a single esc model object and specified credible level to use for all the
-#' intervals.
+#' intervals. Uses numerical integration to calculate the interval endpoints
 #'
 #' @param cq_data data frame with an sample column specifying the names of the
 #' samples from which reactions were generated, and a cqs column containing the
 #' corresponding Cq values. Cq values must be numeric, with non0detects encoded
 #' as NaN.
 #' @param model esc object representing fitted model to use for estimation
-#' @param level Desired credibily level, defaults to 0.95
+#' @param level Desired credible level, defaults to 0.95
 #' @param approximate logical. If TRUE (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
 #' concentrations
@@ -241,6 +241,25 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   return(res)
 }
 
+#' MCMC Estimation of Concentrations Using ESC Model
+#'
+#' Given list of Cq values from a set of technical replicates and fitted ESC
+#' model, generates credible interval of desired level by approximating the
+#' posterior distribution for concentration using MCMC sampling. Requires
+#' installation of JAGS and the rjags and runjags packages
+#'
+#' @param cqs Numeric vector of Cq values from sample replicates, non-detects
+#' coded as NaN
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credible level, defaults to 0.95
+#'
+#' @return A list of two elements. The first, named interval, is a list
+#' containing the bounds of the credible interval, along with the mean and median
+#' of the generated posterior samples. The second, named mcmc_samples, is the
+#' object produced by the runjags package representing the generated samples
+#' @export
+#'
+#' @examples
 conc_mcmc <- function(cqs, model, level = 0.95){
   #software checks
   if(!requireNamespace("runjags", quietly = TRUE)) {
@@ -285,6 +304,29 @@ conc_mcmc <- function(cqs, model, level = 0.95){
   return(list(interval = interval, mcmc_samples = results))
 }
 
+#' MCMC Estimation of Concentrations for Multiple Samples at Once
+#'
+#' Computes Baysian credible intervals for the concentrations of multiple samples
+#' at once, given Cq data for each sample and a single esc model object and
+#' specified credible level to use for all the intervals. Uses MCMC sampling to
+#' approximate the posterior distribution. Requires installation of JAGS and the
+#' rjags and runjags packages
+#'
+#' @param cq_data data frame with an sample column specifying the names of the
+#' samples from which reactions were generated, and a cqs column containing the
+#' corresponding Cq values. Cq values must be numeric, with non0detects encoded
+#' as NaN.
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credible level, defaults to 0.95
+#'
+#' @return A list of two elements. The first, named interval, is a data frame
+#' containing the bounds of the credible intervals, along with the means and
+#' medians of the generated posteriorsamples. The second, named mcmc_samples,
+#' is the object produced by the runjags package representing the generated
+#' samples.
+#' @export
+#'
+#' @examples
 multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
   #software checks
   if(!requireNamespace("runjags", quietly = TRUE)) {

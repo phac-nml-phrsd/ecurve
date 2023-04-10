@@ -189,6 +189,29 @@ esc_mle <- function(esc_data, approximate = TRUE) {
   return(m)
 }
 
+#' MCMC Estimation of ESC Model Parameters
+#'
+#' Performs Baysean estimation of the parameters of the ESC model by using MCMC
+#' sampling to approximate the posterior distribution of those samples. For each
+#' parameter, returns the mean and median of the posterior samples, as well as
+#' the bounds of a credible interval which level specified by the optional level
+#' parameter. Requires installation of JAGS and the rjags and runjags packages
+#'
+#' @param esc_data Data frame containing data to be used to fit the model. Must
+#' contain a column named "concentrations" with known sample concentrations, and
+#' a column named "cqs" with corresponding Cq values. Non-detects should be
+#' encoded by a Cq value of NaN
+#' @param level Desired credible level for interval estimates of parameters.
+#' Defaults to 0.95
+#'
+#' @return A list of 5 elements. The first 4, named intercept, slope, eff, and
+#' sigma, are lists summarizing the credible interval endpoints and posterior
+#' mean and median for the giver parameter, while the 5th, named mcmc_samples,
+#' is the object produced by the runjags package representing the generated
+#' samples
+#' @export
+#'
+#' @examples
 esc_mcmc <- function(esc_data, level = 0.95) {
   #software checks
   if(!requireNamespace("runjags", quietly = TRUE)) {

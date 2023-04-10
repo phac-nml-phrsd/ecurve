@@ -14,7 +14,7 @@ as NaN.}
 
 \item{model}{esc object representing fitted model to use for estimation}
 
-\item{level}{Desired credibily level, defaults to 0.95}
+\item{level}{Desired credible level, defaults to 0.95}
 
 \item{approximate}{logical. If TRUE (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
@@ -30,5 +30,5 @@ One row is generated for each unique sample index in the original data frame.
 Computes Baysian credible intervals and maximum likelihood estimates for the
 concentrations of multiple samples at once, given Cq data for each sample and
 a single esc model object and specified credible level to use for all the
-intervals.
+intervals. Uses numerical integration to calculate the interval endpoints
 }
