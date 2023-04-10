@@ -242,6 +242,18 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
 }
 
 conc_mcmc <- function(cqs, model, level = 0.95){
+  #software checks
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$rjags.found) {
+    stop("package 'rjags' must be installed to use mcmc functions")
+  }
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
+
   # --- Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
@@ -251,9 +263,12 @@ conc_mcmc <- function(cqs, model, level = 0.95){
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
+  #pre-process inputs
   n <- length(cqs)
   nds <- is.nan(cqs)
   cqs[which(nds)] <- NA
+
+  #run mcmc sampling with jags
   results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
                                            package = "ecurve"),
                                data = list(n = n, cq = cqs, ND = as.numeric(nds),
@@ -262,11 +277,27 @@ conc_mcmc <- function(cqs, model, level = 0.95){
                                            beta = model$slope / log(10),
                                            sigma = model$sigma),
                                monitor = c("conc"))
+
+  #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
-  return(results)
+  interval <- as.list(results$summaries[,c(1, 2, 4, 3)])
+  names(interval) <- c("lower", "median", "mean", "upper")
+  return(list(interval = interval, mcmc_samples = results))
 }
 
 multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
+  #software checks
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$rjags.found) {
+    stop("package 'rjags' must be installed to use mcmc functions")
+  }
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
+
   #input checks
   if(!"sample" %in% names(cq_data)) {
     stop("cq_data must contain sample column")
@@ -282,9 +313,12 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
+  #pre-process inputs
   nds <- is.nan(cq_data$cqs)
   cq_data$cqs[which(nds)] <- NA
   samples <- unique(cq_data$sample)
+
+  #run mcmc sampling with jags
   results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
                                            package = "ecurve"),
                                data = list(n = dim(cq_data)[1], cq = cq_data$cqs,
@@ -294,6 +328,14 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
                                            beta = model$slope / log(10),
                                            sigma = model$sigma),
                                monitor = c("conc"))
+
+  #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
-  return(results)
+  intervals <- data.frame(sample = samples,
+                          lower = results$summaries[,1],
+                          median = results$summaries[,2],
+                          mean = results$summaries[,4],
+                          upper = results$summaries[,3])
+  rownames(intervals) <- NULL
+  return(list(intervals = intervals, mcmc_samples = results))
 }

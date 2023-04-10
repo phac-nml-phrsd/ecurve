@@ -190,8 +190,19 @@ esc_mle <- function(esc_data, approximate = TRUE) {
 }
 
 esc_mcmc <- function(esc_data, level = 0.95) {
-  # --- Inputs Checks
+  #software checks
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$rjags.found) {
+    stop("package 'rjags' must be installed to use mcmc functions")
+  }
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
 
+  # --- Inputs Checks
   if(!is.data.frame(esc_data)) {stop("esc_data must be a data frame")}
   if(!"concentrations" %in% names(esc_data)) {
     stop("esc_data must contain concentrations column")
@@ -221,11 +232,21 @@ esc_mcmc <- function(esc_data, level = 0.95) {
   concentrations <- concentrations[detects]
   cqs <- cqs[detects]
 
+  #run mcmc sampling with jags
   results <- runjags::run.jags(system.file("jags-models", "esc-model.txt",
                                            package = "ecurve"),
                                data = list(n = length(cqs), cq = cqs,
                                            conc = concentrations),
                                monitor = c("alpha", "beta", "eff", "sigma"))
+
+  #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
-  return(results)
+  extract_int <- function(param) {
+    interval <- as.list(results$summaries[param,c(1, 2, 4, 3)])
+    names(interval) <- c("lower", "median", "mean", "upper")
+    return(interval)
+  }
+  return(list(intercept = extract_int("alpha"), slope = extract_int("beta"),
+              eff = extract_int("eff"), sigma = extract_int("sigma"),
+              mcmc_samples = results))
 }
