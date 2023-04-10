@@ -240,3 +240,60 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   res[] <- lapply(res, unlist)
   return(res)
 }
+
+conc_mcmc <- function(cqs, model, level = 0.95){
+  # --- Input checks
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+
+  n <- length(cqs)
+  nds <- is.nan(cqs)
+  cqs[which(nds)] <- NA
+  results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
+                                           package = "ecurve"),
+                               data = list(n = n, cq = cqs, ND = as.numeric(nds),
+                                           k = 1, index = rep(1, n),
+                                           alpha = model$intercept,
+                                           beta = model$slope / log(10),
+                                           sigma = model$sigma),
+                               monitor = c("conc"))
+  results <- runjags::add.summary(results, confidence = c(level))
+  return(results)
+}
+
+multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
+  #input checks
+  if(!"sample" %in% names(cq_data)) {
+    stop("cq_data must contain sample column")
+  }
+  if(!"cqs" %in% names(cq_data)) {
+    stop("cq_data must contain cqs column")
+  }
+  if(!all(is.numeric(cq_data$cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+
+  nds <- is.nan(cq_data$cqs)
+  cq_data$cqs[which(nds)] <- NA
+  samples <- unique(cq_data$sample)
+  results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
+                                           package = "ecurve"),
+                               data = list(n = dim(cq_data)[1], cq = cq_data$cqs,
+                                           ND = as.numeric(nds), k = length(samples),
+                                           index = match(cq_data$sample, samples),
+                                           alpha = model$intercept,
+                                           beta = model$slope / log(10),
+                                           sigma = model$sigma),
+                               monitor = c("conc"))
+  results <- runjags::add.summary(results, confidence = c(level))
+  return(results)
+}

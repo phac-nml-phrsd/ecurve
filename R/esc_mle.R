@@ -188,3 +188,44 @@ esc_mle <- function(esc_data, approximate = TRUE) {
                                 cqs = cqs))
   return(m)
 }
+
+esc_mcmc <- function(esc_data, level = 0.95) {
+  # --- Inputs Checks
+
+  if(!is.data.frame(esc_data)) {stop("esc_data must be a data frame")}
+  if(!"concentrations" %in% names(esc_data)) {
+    stop("esc_data must contain concentrations column")
+  }
+  if(!"cqs" %in% names(esc_data)) {
+    stop("esc_data must contain cqs column")
+  }
+
+  concentrations <- esc_data[,"concentrations"]
+  cqs <- esc_data[,"cqs"]
+  if(!all(is.numeric(concentrations))) {stop("concentrations must be numeric")}
+  if(!all(concentrations >= 0 & is.finite(concentrations))) {
+    stop("concentrations must be non-negative real numbers")
+  }
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(length(concentrations) != length(cqs)) {
+    stop("concentrations and cqs must be the same length")
+  }
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+
+  # --- Filter out the non-detects
+  detects <- !is.nan(cqs)
+  concentrations <- concentrations[detects]
+  cqs <- cqs[detects]
+
+  results <- runjags::run.jags(system.file("jags-models", "esc-model.txt",
+                                           package = "ecurve"),
+                               data = list(n = length(cqs), cq = cqs,
+                                           conc = concentrations),
+                               monitor = c("alpha", "beta", "eff", "sigma"))
+  results <- runjags::add.summary(results, confidence = c(level))
+  return(results)
+}
