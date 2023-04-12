@@ -1,11 +1,26 @@
+#jags model for estimating concentrations from known esc parameters
+#the input data should be encoded as follows: each replicate has a ND value,
+#which is 1 in the case of a non-detect and 0 otherwise. If the ND value is 0,
+#a cq value is also specificed, otherwise, it is left as missing (i.e. NA).
+#which sample a given well was prepered from is encoded by index numbers
+
 model {
+  #distributions of non-detects and cq values for each well
   for(i in 1:n) {
+    #distribution for non-detects given concentration
     ND[i] ~ dbern(probND[index[i]])
+    #distribution for N0 values given concentration, conditional on detection
     N0[i] ~ dpois(conc[index[i]]) T(1,)
+    #distribution for cq values given N0 values. Note that an arbitray impossible
+    #value is use for non-detects, which ultimtely does not affect the model
+    #since there is no observed cq value for a no-detect
     cq[i] ~ dnorm(ifelse(ND[i] == 0, alpha + beta * log(N0[i]), -100), 1/sigma^2)
   }
+
+  #set seperate priors for each sample concentration to estimate. k is the number
+  #of concentrations to estimate
   for(i in 1:k) {
-    probND[i] <- exp(-conc[i])
-    conc[i] ~ dunif(0, 100)
+    probND[i] <- exp(-conc[i]) #probability of non-detect
+    conc[i] ~ dunif(0, 100) #prior for concentrations
   }
 }
