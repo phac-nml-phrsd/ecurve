@@ -260,7 +260,10 @@ esc_mcmc <- function(esc_data, level = 0.95) {
                                            package = "ecurve"),
                                data = list(n = length(cqs), cq = cqs,
                                            conc = concentrations),
-                               monitor = c("alpha", "beta", "eff", "sigma"))
+                               monitor = c("alpha", "beta", "eff", "sigma"),
+                               inits = function() {
+                                 list(alpha = 37.5, eff = 0.95, log2sigma = 0)
+                               })
 
   #process and return results
   results <- runjags::add.summary(results, confidence = c(level))

@@ -282,6 +282,11 @@ conc_mcmc <- function(cqs, model, level = 0.95){
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
+  #unpack model
+  intercept <- model$intercept
+  slope <- model$slope / log(10)
+  sigma <- model$sigma
+
   #pre-process inputs
   n <- length(cqs)
   nds <- is.nan(cqs)
@@ -292,10 +297,14 @@ conc_mcmc <- function(cqs, model, level = 0.95){
                                            package = "ecurve"),
                                data = list(n = n, cq = cqs, ND = as.numeric(nds),
                                            k = 1, index = rep(1, n),
-                                           alpha = model$intercept,
-                                           beta = model$slope / log(10),
-                                           sigma = model$sigma),
-                               monitor = c("conc"))
+                                           alpha = intercept, beta = slope,
+                                           sigma = sigma),
+                               monitor = c("conc"),
+                               inits = function() {
+                                 mod_cqs <- cqs
+                                 mod_cqs[which(nds)] <- intercept
+                                 list(conc = exp((mean(mod_cqs) - intercept)/slope))
+                               })
 
   #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
@@ -355,6 +364,11 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
+  #unpack model
+  intercept <- model$intercept
+  slope <- model$slope / log(10)
+  sigma <- model$sigma
+
   #pre-process inputs
   nds <- is.nan(cq_data$cqs)
   cq_data$cqs[which(nds)] <- NA
@@ -366,10 +380,17 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
                                data = list(n = dim(cq_data)[1], cq = cq_data$cqs,
                                            ND = as.numeric(nds), k = length(samples),
                                            index = match(cq_data$sample, samples),
-                                           alpha = model$intercept,
-                                           beta = model$slope / log(10),
-                                           sigma = model$sigma),
-                               monitor = c("conc"))
+                                           alpha = intercept, beta = slope,
+                                           sigma = sigma),
+                               monitor = c("conc"),
+                               inits = function() {
+                                 mod_cq_data <- cq_data
+                                 mod_cq_data$cqs[which(nds)] <- intercept
+                                 mean_cqs <- aggregate(cqs ~ sample,
+                                                       data = mod_cq_data,
+                                                       FUN = mean)$cqs
+                                 list(conc = exp((mean_cqs - intercept)/slope))
+                               })
 
   #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
