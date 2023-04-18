@@ -14,7 +14,7 @@ model {
   #priors for model parameters
   alpha ~ dunif(0, 50) #model intercept
   eff ~ dunif(0, 1) #pcr efficiency
-  log2sigma ~ dunif(-3, 1) #log of sigma
+  log2sigma ~ dunif(-10, 1) #log of sigma
 
   #additional parameters derived from those specified above
   beta <- -log(10)/log(1 + eff) #model slope

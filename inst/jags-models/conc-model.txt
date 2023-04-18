@@ -21,6 +21,6 @@ model {
   #of concentrations to estimate
   for(i in 1:k) {
     probND[i] <- exp(-conc[i]) #probability of non-detect
-    conc[i] ~ dunif(0, 1000000) #prior for concentrations
+    conc[i] ~ dunif(0, 10000000) #prior for concentrations
   }
 }

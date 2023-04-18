@@ -261,8 +261,12 @@ esc_mcmc <- function(esc_data, level = 0.95) {
                                data = list(n = length(cqs), cq = cqs,
                                            conc = concentrations),
                                monitor = c("alpha", "beta", "eff", "sigma"),
+                               thin = 10,
                                inits = function() {
-                                 list(alpha = 37.5, eff = 0.95, log2sigma = 0)
+                                 naive_sc <- lm(cqs ~ log(concentrations))
+                                 list(alpha = coef(naive_sc)[1],
+                                      eff = min(1, exp(-1/coef(naive_sc)[2]) - 1),
+                                      log2sigma = log(sigma(naive_sc), base = 2))
                                })
 
   #process and return results
