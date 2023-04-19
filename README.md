@@ -1,5 +1,7 @@
 # ecurve
 
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+
 [![codecov](https://codecov.io/gh/phac-nml-phrsd/ecurve/branch/main/graph/badge.svg?token=HKCD5AE7KP)](https://codecov.io/gh/phac-nml-phrsd/ecurve)
 
 Enhanced Standard Curve Model
