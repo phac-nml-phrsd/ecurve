@@ -8,18 +8,19 @@ conc_mle(cqs, model, approximate = TRUE)
 }
 \arguments{
 \item{cqs}{Numeric vector of Cq values from sample replicates, non-detects
-coded as NaN}
+coded as \code{NaN}.}
 
-\item{model}{\code{esc} object representing fitted model to use for estimation.}
+\item{model}{\code{esc} object representing a fitted model to use for estimation.}
 
-\item{approximate}{logical. If TRUE (the default), a faster but potentially
+\item{approximate}{Logical. If \code{TRUE} (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
-concentrations}
+concentrations.}
 }
 \value{
-MLE of concentration
+The maximum likelihood estimation of the concentrations.
 }
 \description{
-Given list of Cq values from a set of technical replicates and fitted ESC
-model, generates maximum likelihood estimate of concentration
+Given a list of Cq values from a set of technical replicates and
+a fitted ESC model, generates a maximum likelihood estimate
+of the concentrations.
 }

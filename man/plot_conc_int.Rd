@@ -2,20 +2,23 @@
 % Please edit documentation in R/plot_conc_int.R
 \name{plot_conc_int}
 \alias{plot_conc_int}
-\title{Plot Concentration Credible Intervals}
+\title{Plot Credible Intervals Concentration}
 \usage{
 plot_conc_int(interval, type)
 }
 \arguments{
-\item{interval}{conc_int object containing concentration posterior distribution
-and credible interval}
+\item{interval}{a \code{conc_int} object containing the concentration posterior distribution
+and credible interval.}
 
-\item{type}{distribution function to plot, either "pdf" or "cdf"}
+\item{type}{distribution function to plot, either \code{"pdf"} or \code{"cdf"}.}
 }
 \value{
-ggplot object representing generated plot
+A \code{ggplot} object representing generated plot.
 }
 \description{
-Given conc_int object, plots either posterior pdf or cdf for concentration,
-along with MLE estimate and credible interval encoded in conc_int object
+Given a \code{conc_int} object, plots either the posterior
+probability density function or the cumulative density function
+for the concentration,
+along with the MLE estimate and the credible interval encoded
+in the \code{conc_int} object
 }

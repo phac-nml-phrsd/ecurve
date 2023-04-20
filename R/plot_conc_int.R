@@ -1,19 +1,25 @@
-#' Plot Concentration Credible Intervals
+#' Plot Credible Intervals Concentration
 #'
-#' Given conc_int object, plots either posterior pdf or cdf for concentration,
-#' along with MLE estimate and credible interval encoded in conc_int object
+#' Given a \code{conc_int} object, plots either the posterior
+#' probability density function or the cumulative density function
+#' for the concentration,
+#' along with the MLE estimate and the credible interval encoded
+#' in the \code{conc_int} object
 #'
-#' @param interval conc_int object containing concentration posterior distribution
-#' and credible interval
-#' @param type distribution function to plot, either "pdf" or "cdf"
+#' @param interval a \code{conc_int} object containing the concentration posterior distribution
+#' and credible interval.
+#' @param type distribution function to plot, either \code{"pdf"} or \code{"cdf"}.
 #'
-#' @return ggplot object representing generated plot
+#' @return A \code{ggplot} object representing generated plot.
+#'
 #' @export
 #'
 #' @examples
+#'
+#'
 plot_conc_int <- function(interval, type) {
 
-  #Input checks
+  # Input checks
   if(class(interval) != "conc_int") {stop("interval is not a conc_int object")}
   if(type != "pdf" & type != "cdf") {stop("invalid type ", type, " specified")}
 
@@ -25,9 +31,11 @@ plot_conc_int <- function(interval, type) {
   yvals <- (fun[coords] * (grid[coords + 1] - xvals) +
               fun[coords + 1] * (xvals - grid[coords])) / (grid[coords + 1] -
                                                              grid[coords])
-  point_df <- data.frame(x = xvals, y = yvals, Legend = c("Interval", "MLE", "Interval"))
+  point_df <- data.frame(x = xvals,
+                         y = yvals,
+                         Legend = c("Interval", "MLE", "Interval"))
 
-  #Generate plot
+  # Generate plot
   if(type == "pdf") {
     fun_mapping <- ggplot2::aes(x = concentration, y = pdf)
     label <- ggplot2::ylab("Probability Density")
@@ -41,6 +49,5 @@ plot_conc_int <- function(interval, type) {
     ggplot2::geom_segment(data = point_df,
                           mapping = ggplot2::aes(x = x, y = 0, xend = x,
                                                  yend = y, color = Legend))
-
-  plot
+ return(plot)
 }

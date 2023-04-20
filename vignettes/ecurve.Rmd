@@ -172,7 +172,11 @@ plot_conc_int(samp7_int, type = "pdf")
 plot_conc_int(samp7_int, type = "cdf")
 ```
 
-Finally, we illustrate the use of the `multi_interval()` function to fit concentration credible intervals for all samples in the `esc-test-data.csv` dataset simultaneously. The `test.data` dataframe is already in the format required by this function, with a `sample` column listing the sample indices and and `cqs` column listing the corresponding $C_q$ values. For each unique sample index, this function computes the MLE concentration estimate and lower and upper bounds of a Bayesian credible interval based on the given $C_q$ values, and packages the results into a dataframe. As with the `conc_interval()` function, there is also an optional `level` parameter to control the level of the credible intervals, with the default being 0.95
+Finally, we illustrate the use of the `multi_interval()` function to fit concentration credible intervals for all samples in the `esc-test-data.csv` dataset simultaneously. The `test.data` dataframe is already in the format required by this function, with a `sample` column listing the sample indices and and `cqs` column listing the corresponding $C_q$ values.
+```{r show_data_multi}
+head(test.data)
+```
+For each unique sample index, this function computes the MLE concentration estimate and lower and upper bounds of a Bayesian credible interval based on the given $C_q$ values, and packages the results into a dataframe. As with the `conc_interval()` function, there is also an optional `level` parameter to control the level of the credible intervals, with the default being 0.95.
 
 ```{r, warning = FALSE}
 multi_interval(test.data, model = model)
