@@ -64,20 +64,23 @@ conc_log_likelihood_factory <- function(cqs, model) {
 
 #' Estimate concentration from Cq values
 #'
-#' Given list of Cq values from a set of technical replicates and fitted ESC
-#' model, generates maximum likelihood estimate of concentration
+#' Given a list of Cq values from a set of technical replicates and
+#' a fitted ESC model, generates a maximum likelihood estimate
+#' of the concentrations.
 #'
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
-#' coded as NaN
-#' @param model `esc` object representing fitted model to use for estimation.
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' coded as \code{NaN}.
+#' @param model \code{esc} object representing a fitted model to use for estimation.
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return MLE of concentration
+#' @return The maximum likelihood estimation of the concentrations.
+#'
 #' @export
 #'
 #' @examples
+#'
 conc_mle <- function(cqs, model, approximate = TRUE) {
 
   # --- Input checks
@@ -108,27 +111,31 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
   return(res$estimate)
 }
 
-#' Generate credible interval for concentration analytically
+#' @title Generate credible interval for concentration analytically
 #'
-#' Given list of Cq values from a set of technical replicates and fitted ESC
-#' model, generates credible interval of desired level through numerical
-#' integration of the posterior distribution
+#' @description Given list of Cq values from a set of technical replicates
+#' and a fitted ESC model, generates credible interval of desired level
+#' through numerical integration of the posterior distribution.
 #'
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
-#' coded as NaN
-#' @param model esc object representing fitted model to use for estimation
-#' @param level Desired credibily level, defaults to 0.95
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' coded as \code{NaN}.
+#' @param model A \code{esc} object representing a fitted model to use for estimation.
+#' @param level Desired credibility level, defaults to 0.95.
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return conc_int object, containing a list interval specifying the lower and
+#' @return A \code{conc_int} object, containing a list interval specifying the lower and
 #' upper bounds of desired credible interval, as well as the maximum likelihood
 #' concentration estimate, and a data frame distribution, containing values of
-#' the pdf and cdf of the posterior distribution evaluated at specified points
+#' the probability density function  and the cumulative density function
+#' of the posterior distribution evaluated at specified points.
+#'
+#'
 #' @export
 #'
 #' @examples
+#'
 conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 
   # --- Input checks

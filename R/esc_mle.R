@@ -115,17 +115,22 @@ esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) 
 
 
 
-#' Fit ESC Model Using MLE
+#' @title Fit ESC Model Using Maximum Likelihood Estimation.
+#'
+#' @description Fit the parameters of an ESC model to qPCR standard curve data. The ESC model is
+#' described in
+#'  \href{https://doi.org/10.3389/fmicb.2023.1048661}{Schmidt et al. 2022}.
 #'
 #' @param esc_data Data frame containing data to be used to fit the model. Must
-#' contain a column named "concentrations" with known sample concentrations, and
-#' a column named "cqs" with corresponding Cq values. Non-detects should be
-#' encoded by a Cq value of NaN
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' contain a column named \code{concentrations} with known sample concentrations, and
+#' a column named \code{cqs} with corresponding Cq values. Non-detects should be
+#' encoded by a Cq value of \code{NaN}.
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return esc object representing fitted model
+#' @return An \code{esc} object representing fitted model.
+#'
 #' @export
 #'
 #' @example

@@ -28,13 +28,13 @@ where $\lambda$ is the concentration of the gene in the sample from which the re
 
 The case of $N_0 = 0$ is assumed to correspond to non-detects, that is, every reaction beginning with $N_0 = 0$ will produce a non-detect, and any observed non-detects are assumed to have been generated in this manner. Otherwise, as in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qPCR has a linear relationship with $\log_{10} N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$:
 
-$$C_q | N_0 \sim N(\alpha + \beta \log_{10} N_0, \sigma^2)$$ 
+$$C_q | N_0 \sim \mathcal{N}(\alpha + \beta \log_{10} N_0, \sigma^2)$$ 
 Together, these assumptions fully determine the probability of detection and the expected distribution of $C_q$ values conditional on detection for any sample concentration, and hence fully specify the model. The `ecurve` package provides mechanisms for fitting the model based on qPCR data from samples of known concentration via maximum likelihood estimation (MLE) of the (a priori) unknown parameters $\alpha$, $\beta$ and $\sigma$.
 
-We also note that as in traditional standard curve analysis, the slope parameter $\beta$ can be given a theoretical interpretation by relating it to the PCR efficiency $E$, which is defined as the average number of gene copies duplicated during each PCR cycle. For a reacion with $N_0$ initial gene copies, the number of gene copies after $c$ cycles id given by $N_0(1 + E)^c$. Thus, since the $C_q$ value is a measurement of the number of cycles required to reach some threshold number $N_f$ of gene copies, we have
+We also note that as in traditional standard curve analysis, the slope parameter $\beta$ can be given a theoretical interpretation by relating it to the PCR efficiency $E$, which is defined as the average number of gene copies duplicated during each PCR cycle. For a reaction with $N_0$ initial gene copies, the number of gene copies after $c$ cycles id given by $N_0(1 + E)^c$. Thus, since the $C_q$ value is a measurement of the number of cycles required to reach some threshold number $N_f$ of gene copies, we have
 
 $$N_f = N_0(1 + E)^{C_q}$$
-Taking logarithms on both sides and sloving for $C_q$ in terms of $N_0$, we obtain
+Taking logarithms on both sides and solving for $C_q$ in terms of $N_0$, we obtain
 
 $$C_q = \frac{\log_{10} N_f}{\log_{10}(1 + E)} - \frac{1}{\log_{10}(1 + E)}\log_{10}N_0$$
 Thus, the slope parameter $\beta$ is given by
@@ -46,27 +46,35 @@ and therefore the PCR efficiency $E$ is given by
 $$E = 10^{-1/\beta} - 1$$
 Also, note that since the PCR efficiency is constrained by $0 < E < 1$, it follows that the slope parameter is constrained by $\beta < -\frac{1}{\log_{10} 2} \approx -3.32$
 
-The package provides functionality for performing the MLE via the `esc_mle()` function, for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle()` function, and for using Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate via the `conc_interval()` function. The `multi_interval()` function is also provided for performing concentration estimations for multiple samples at once using the same standard curve.
-
-Note that the functions `esc_mle()`, `conc_mle()`, `conc_interval()`, `multi_interval()`, and `plot_esc_model()` muat all internally compute features of the theoretical distribution of $C_q$ values at a given concentration by summing over possible $N_0$ values, and since the number of possible $N_0$ values in infinite, this sum must be approximated by considering a finite subset of the possible values. Testing indicates that the default approximation used works well most of the time, but may break down at extremely small values of $\sigma$. Although such scenarios are unlikely to occur in practice, a more accurate approximate using more $N_0$ values, which perfoms well even in these extreme cases, can be specificed by setting the optional parameter `approximate = FALSE` in any of these functions. However, it should be noted that using this alterante approximation may cause significant slowdowns when working with high concentration values, and provides minimal benefits outside of such extreme cases, which is why it is not used by default.
+In addition to fitting the ESC model, the `ecurve` package provides functionality for performing the MLE via the `esc_mle()` function, for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle()` function. 
+Moreover, the function `conc_interval()` provides a Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate. 
+The `multi_interval()` function is also provided for performing concentration estimations for multiple samples at once using the same standard curve.
 
 The functions `plot_esc_data()`, `plot_esc_model()` and `plot_conc_int()` are also provided to help visualize the results of these analyses.
 
+### Note on approximations performed
+
+The functions `esc_mle()`, `conc_mle()`, `conc_interval()`, `multi_interval()`, and `plot_esc_model()` all internally compute features of the theoretical distribution of $C_q$ values at a given concentration by summing over possible $N_0$ values, and since the number of possible $N_0$ values is infinite, this sum must be approximated by considering a finite subset of the possible values. 
+Testing indicates that the default approximation used works well most of the time, but may break down at extremely small values of $\sigma$. Although such scenarios are unlikely to occur in practice, a more accurate approximate using more $N_0$ values, which performs well even in these extreme cases, can be specified by setting the optional parameter `approximate = FALSE` in any of these functions. However, it should be noted that using this alternate approximation may cause significant slowdowns when working with high concentration values, and provides minimal benefits outside of such extreme cases, which is why it is not used by default.
+
+
+
 ## Data
 
-The data used for this example analysis is located in two csv files: `esc-fit-data.csv` and `esc-test-data.csv`. 
+The data used for this example analysis is located in two CSV files: `esc-fit-data.csv` and `esc-test-data.csv`. 
 
-The dataset `esc-fit-data.csv` contains data for fitting the model, and contains two columns, a `concentrations` column containing known sample concentrations, and a `cqs` column containing the corresponding $C_q$ value obtained in a qPCR run. 
+The dataset `esc-fit-data.csv` contains an example of standard curve data for fitting the model. It must contain two columns named `concentrations` representing known sample concentrations, and `cqs` containing the corresponding $C_q$ value obtained in a qPCR run. 
 
-The dataset `esc-test-data.csv` contains data for illustrating concentration estimation from other samples (not used in the model fit). It contains two columns, a `sample` column containing a numerical index of the sample for which we wish to know the concentration (due to the presence of technical replicates, these are not unique), and  `cqs` column containing the corresponding $C_q$ value obtained in a qPCR run. 
+The dataset `esc-test-data.csv` contains data for illustrating concentration estimation from other samples (not used in the model fit). 
+It must contain two columns, one named `sample` representing a numerical index of the sample for which we wish to know the concentration (due to the presence of technical replicates, these are not unique), and  one named `cqs` containing the corresponding $C_q$ value obtained in a qPCR run. 
 
 We now proceed to load the data:
-```{r}
+```{r load_data }
 fit.data  <- read.csv("esc-fit-data.csv")
 test.data <- read.csv("esc-test-data.csv")
 ```
 In the datasets, non-detects are encoded as a $C_q$ value of "ND", which also results in the `cqs` values being interpreted as strings. However, the `ecurve` package requires the `cqs` values to be numeric with non-detects coded as `NaN`, so the data must be modified accordingly before the analysis is run.
-```{r}
+```{r recode_NDs}
 fit.data$cqs[which(fit.data$cqs == "ND")] <- NaN
 fit.data$cqs <- as.numeric(fit.data$cqs)
 test.data$cqs[which(test.data$cqs == "ND")] <- NaN
@@ -75,7 +83,7 @@ test.data$cqs <- as.numeric(test.data$cqs)
 
 ## Model Fitting
 
-To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe containing data on the known concentrations and $C_q$ values used to calibrate the model.
+To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe of the known concentrations and $C_q$ values used to calibrate the model.
 
 The model is fit using MLE, and the function returns an object containing the fitted model parameters $\alpha$ (named as `intercept`), $\beta$ (named as `slope`) and $\sigma$ (named as `sigma`); `eff`, an estimate of the qPCR efficiency; and `data`, a copy of the original data.
 
@@ -98,7 +106,8 @@ model$sigma
 model$eff
 ```
 
-The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` to the plotting function) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. Note that non-detects are not represented in this plot in any way, however, their presence does not actually affect the model fit since their likelihood is independent of all of the model parameters. The plot is returned by the function as a `ggplot` object.
+The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. 
+The grey points represent the data used to fit the model, excluding non-detects, and the blue line shows the median $C_q$ value for each concentration as estimated by the model. Finally, the light blue area indicates the 95\% probability interval (or any other percentage, as specified by the input parameter `PI` to the plotting function) for the $C_q$ values given the fitted model parameters and conditional on detection. That is, if the fitted model is indeed an accurate reflection of the data generating mechanism, we would expect about 95\% of the data points to fall within this region. Note that non-detects are not represented in this plot in any way, however, their presence does not actually affect the model fit since their likelihood is independent of all of the model parameters. The plot is returned by the function as a `ggplot` object.
 ```{r plot_esc_model, fig.width=6}
 plot_esc_model(model, PI = 0.95)
 ```
@@ -118,7 +127,9 @@ plot_esc_data(fit.data) +
                        fill = 'steelblue2', alpha = 0.2)
 ```
 
-Note the difference of the functional relationship at low concentrations. The naive linear regression cannot account for the greater spread in $C_q$ values observed at lower concentrations as compared to the speard observed a higher concentrations, instead assuming that the spread is constant at all concentration values. This results in the variability being overestimated at high concentrations, as illustrated by the much greater width of the probability interval at these value when compared to the probability interval generated by the ESC model. Furthermore, this model suffers from the additional limitation that it cannot account for non-detects in a natural way (in this case, the non-detects are simply dropped as missing data before fitting the model).
+Note the difference of the functional relationship at low concentrations. The naive linear regression cannot account for the greater spread in $C_q$ values observed at lower concentrations as compared to the spread observed a higher concentrations, instead assuming that the spread is constant at all concentration values. 
+This results in the variability being overestimated at high concentrations, as illustrated by the much greater width of the probability interval at these value when compared to the probability interval generated by the ESC model. 
+Furthermore, this model suffers from the additional limitation that it cannot account for non-detects in a natural way (in this case, the non-detects are simply dropped as missing data before fitting the model).
 
 
 
@@ -155,16 +166,16 @@ samp3_int$interval
 samp7_int$interval
 samp8_int$interval
 ```
-These intervals can also be visualized using the `plot_conc_int()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter `type`, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brievity, this is only illustrated for sample 7.
+These intervals can also be visualized using the `plot_conc_int()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter `type`, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brevity, this is only illustrated for sample 7.
 ```{r plot_concetration_pdf, fig.width=8}
 plot_conc_int(samp7_int, type = "pdf")
 plot_conc_int(samp7_int, type = "cdf")
 ```
 
-Finally, we illustrate the use of the `multi_interval()` function to fit concentration credible intervals for all samples in the `esc-test-data.csv` dataset simultaneously. The `test.data` dataframe is already in the format required by this function, with a `sample` column listing the sample indices and and `cqs` column listing the corresponding $C_q$ values. For each unique sample index, this function computes the MLE concentration extimate and lower and upper bounds of a Bayesian credible interval based on the given $C_q$ values, and packages the results into a dataframe. As with the `conc_interval()` function, there is also an optinal `level` parameter to control the level of the credible intervals, with the default being 0.95
+Finally, we illustrate the use of the `multi_interval()` function to fit concentration credible intervals for all samples in the `esc-test-data.csv` dataset simultaneously. The `test.data` dataframe is already in the format required by this function, with a `sample` column listing the sample indices and and `cqs` column listing the corresponding $C_q$ values. For each unique sample index, this function computes the MLE concentration estimate and lower and upper bounds of a Bayesian credible interval based on the given $C_q$ values, and packages the results into a dataframe. As with the `conc_interval()` function, there is also an optional `level` parameter to control the level of the credible intervals, with the default being 0.95
 
 ```{r, warning = FALSE}
 multi_interval(test.data, model = model)
 ```
 
-Note that the intervals for samples 3, 7, and 8 are the same as those produced by the `conc_interval()` function above; however, there is no mechanism for poltting the intervals generated by the `multi_interval` function.
+Note that the intervals for samples 3, 7, and 8 are the same as those produced by the `conc_interval()` function above; however, there is no mechanism for plotting the intervals generated by the `multi_interval` function.
