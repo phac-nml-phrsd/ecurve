@@ -297,6 +297,7 @@ conc_mcmc <- function(cqs, model, level = 0.95){
                                            alpha = intercept, beta = slope,
                                            sigma = sigma),
                                monitor = c("conc"),
+                               thin = 4,
                                inits = function() {
                                  mod_cqs <- cqs
                                  mod_cqs[which(nds)] <- intercept
@@ -377,6 +378,7 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
                                            alpha = intercept, beta = slope,
                                            sigma = sigma),
                                monitor = c("conc"),
+                               thin = 4,
                                inits = function() {
                                  mod_cq_data <- cq_data
                                  mod_cq_data$cqs[which(nds)] <- intercept
