@@ -89,7 +89,7 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.logical(approximate)) {stop("approximate must be logical")}
   if(all(is.nan(cqs))) {return(0)}
 
@@ -136,19 +136,22 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
 #'
 #' @examples
 #'
-conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
+conc_interval <- function(cqs,
+                          model,
+                          level = 0.95,
+                          approximate = TRUE) {
 
   # --- Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(! inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(!is.logical(approximate)) {stop("approximate must be logical")}
 
-  # --- Deal with case of all non-detects seperately
+  # --- Deal with case of all non-detects separately
   if(all(is.nan(cqs))) {
     n <- length(cqs)
     grid <- seq(from = 0, to = log(10) * 9 / n, length.out = 1001)
@@ -160,24 +163,26 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
   # --- Compute MLE
   if(approximate){
     conc_log_like <- function(conc) {
-      log_likelihood_est(conc, cqs, model$intercept, model$slope / log(10),
-                         model$sigma)
+      log_likelihood_est(conc, cqs,
+                         intercept = model$intercept,
+                         slope = model$slope / log(10),
+                         sigma = model$sigma)
     }
   }
   else {
     conc_log_like <- conc_log_likelihood_factory(cqs, model)
   }
 
-  mle <- nlm(conc_log_like,
-             exp((mean(cqs, na.rm = TRUE) - model$intercept) *
-                   log(10)/model$slope))$estimate
+  mle <- stats::nlm(conc_log_like,
+                    exp((mean(cqs, na.rm = TRUE) - model$intercept) *
+                          log(10)/model$slope))$estimate
 
-  # Compute bounds for numerical intergration
+  # Compute bounds for numerical integration
   threshold <- conc_log_like(mle) + 9 * log(10)
   root_est_factor <- exp(9.21 * model$sigma / abs(model$slope))
-  lb <- uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
+  lb <- stats::uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
                 lower = mle / root_est_factor, extendInt = "downX")$root
-  ub <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
+  ub <- stats::uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
                 upper = mle * root_est_factor, extendInt = "upX")$root
   lb <- max(lb, ub/2001)
 
@@ -188,7 +193,7 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 
   # --- Construct and return interval
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
-  interval <- approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
+  interval <- stats::approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
 
   res = new_conc_int(mle, interval, grid, pdf, cdf)
 
@@ -236,7 +241,7 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(!is.logical(approximate)) {stop("approximate must be logical")}

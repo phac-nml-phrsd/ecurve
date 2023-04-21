@@ -9,14 +9,14 @@ cq_quantile_est(alpha, conc, intercept, slope, sigma)
 \arguments{
 \item{alpha}{quantile level}
 
+\item{conc}{numeric concentration at which to evaluate specified
+quantile}
+
 \item{intercept}{intercept parameter of ESC model}
 
 \item{slope}{slope parameter of ESC model}
 
 \item{sigma}{sigma parameter of ESC model}
-
-\item{concentrations}{numeric concentration at which to evaluate specified
-quantile}
 }
 \value{
 estimate of specified quantile

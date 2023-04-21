@@ -20,7 +20,7 @@
 plot_conc_int <- function(interval, type) {
 
   # Input checks
-  if(class(interval) != "conc_int") {stop("interval is not a conc_int object")}
+  if(!inherits(interval, 'conc_int')) {stop("interval is not a conc_int object")}
   if(type != "pdf" & type != "cdf") {stop("invalid type ", type, " specified")}
 
   #Compute positions of interval markers

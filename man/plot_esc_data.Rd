@@ -16,5 +16,7 @@ Non-detects should be encoded by a Cq value of \code{NaN}.}
 A \code{ggplot} object representing plot.
 }
 \description{
-Plot Standard Curve Calibration Data
+Given a data frame containing concentrations
+and corresponding Cq values, plots Cq values against
+log-transformed concentrations.
 }

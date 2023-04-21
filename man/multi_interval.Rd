@@ -21,7 +21,7 @@ less accurate approximation for the likelihood function will be used at high
 concentrations.}
 }
 \value{
-Data frame with an \code{sample} column specifying the sample index,
+Data frame with a \code{sample} column specifying the sample index,
 and \code{lower},
 \code{mle}, and \code{upper} columns specifying the interval
 lower bound, maximum likelihood

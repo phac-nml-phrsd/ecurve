@@ -1,6 +1,6 @@
 #' @title Plot Standard Curve Calibration Data
 #'
-#' @descrition Given a data frame containing concentrations
+#' @description Given a data frame containing concentrations
 #' and corresponding Cq values, plots Cq values against
 #' log-transformed concentrations.
 #'
@@ -84,7 +84,7 @@ cq_quantile <- function(alpha,
   N0ends <- match(N0maxes, N0s)
 
   quant <- function(conc, N0start, N0end) {
-    uniroot(function(cq) {
+    stats::uniroot(function(cq) {
       sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
             dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
       lower = qnorm(alpha, mean = means[N0end], sd = sigma),
@@ -104,7 +104,7 @@ cq_quantile <- function(alpha,
 #' and are used to estimate contribution of nearby N0 values not included in the
 #' computation.
 #'
-#' @param concentrations numeric concentration at which to evaluate specified
+#' @param conc numeric concentration at which to evaluate specified
 #' quantile
 #' @param alpha quantile level
 #' @param intercept intercept parameter of ESC model
@@ -120,7 +120,7 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
   N0s <- seq(N0start, N0end, by = granularity)
 
   #compute quantile
-  uniroot(function(cq) {
+  stats::uniroot(function(cq) {
     sum(pnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
           dpois(N0s, conc) * granularity) - alpha * (1 - exp(-conc))},
     upper = qnorm(alpha, mean = intercept + slope * log(N0start), sd = sigma),
@@ -148,7 +148,7 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
 
   # --- Input checks
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
 
   if(!is.numeric(PI)) {stop("PI must be numeric")}
   if(PI > 1 | PI < 0) {stop("PI must be between 0 and 1")}
