@@ -8,24 +8,25 @@ conc_interval(cqs, model, level = 0.95, approximate = TRUE)
 }
 \arguments{
 \item{cqs}{Numeric vector of Cq values from sample replicates, non-detects
-coded as NaN}
+coded as \code{NaN}.}
 
-\item{model}{esc object representing fitted model to use for estimation}
+\item{model}{A \code{esc} object representing a fitted model to use for estimation.}
 
-\item{level}{Desired credibily level, defaults to 0.95}
+\item{level}{Desired credibility level, defaults to 0.95.}
 
-\item{approximate}{logical. If TRUE (the default), a faster but potentially
+\item{approximate}{Logical. If \code{TRUE} (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
-concentrations}
+concentrations.}
 }
 \value{
-conc_int object, containing a list interval specifying the lower and
+A \code{conc_int} object, containing a list interval specifying the lower and
 upper bounds of desired credible interval, as well as the maximum likelihood
 concentration estimate, and a data frame distribution, containing values of
-the pdf and cdf of the posterior distribution evaluated at specified points
+the probability density function  and the cumulative density function
+of the posterior distribution evaluated at specified points.
 }
 \description{
-Given list of Cq values from a set of technical replicates and fitted ESC
-model, generates credible interval of desired level through numerical
-integration of the posterior distribution
+Given list of Cq values from a set of technical replicates
+and a fitted ESC model, generates credible interval of desired level
+through numerical integration of the posterior distribution.
 }

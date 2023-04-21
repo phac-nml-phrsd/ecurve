@@ -7,18 +7,18 @@
 plot_esc_model(model, PI = 0.95, approximate = TRUE)
 }
 \arguments{
-\item{model}{esc object representing fitted model}
+\item{model}{\code{esc} object representing fitted model.}
 
-\item{PI}{Numeric. Width of the probability interval.}
+\item{PI}{Numeric. Width of the probability interval (must be between 0 and 1).}
 
-\item{approximate}{logical. If TRUE (the default), a faster but potentially
+\item{approximate}{Logical. If \code{TRUE} (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
-concentrations}
+concentrations.}
 }
 \value{
-ggplot object representing plot
+A \code{ggplot} object representing plot.
 }
 \description{
-Adds fitted median and probability interval of ESC model to plot of Cq vs
-Concentration
+Plots the fitted median and probability interval of
+an ESC model Cq vs concentration.
 }

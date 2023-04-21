@@ -2,24 +2,25 @@
 % Please edit documentation in R/esc_class.R
 \name{new_esc}
 \alias{new_esc}
-\title{Create New esc Object}
+\title{Create a New ESC Object}
 \usage{
 new_esc(intercept, slope, sigma, data = NULL)
 }
 \arguments{
-\item{intercept}{intercept parameter of ESC model}
+\item{intercept}{intercept parameter of ESC model.}
 
-\item{slope}{slope parameter of ESC model}
+\item{slope}{slope parameter of ESC model.}
 
-\item{sigma}{sigma parameter of ESC model}
+\item{sigma}{sigma parameter of ESC model.}
 
-\item{data}{data frame containing concentration and cq values used to fit the
-model. Optional parameter, defaults to NULL if not provided.}
+\item{data}{data frame containing concentration and Cq values used to fit the
+model. Optional parameter, defaults to \code{NULL} if not provided.}
 }
 \value{
-Object of class esc
+Object of class \code{esc}.
 }
 \description{
-Creates new object of class esc, representing ESC model as a list containing
-intercept, slope and sigma parameters, as well as the calculated efficiency
+Creates new object of class \code{esc},
+representing a ESC model as a list containing
+intercept, slope and sigma parameters, as well as the calculated efficiency.
 }

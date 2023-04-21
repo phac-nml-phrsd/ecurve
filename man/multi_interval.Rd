@@ -7,28 +7,30 @@
 multi_interval(cq_data, model, level = 0.95, approximate = TRUE)
 }
 \arguments{
-\item{cq_data}{data frame with an sample column specifying the names of the
-samples from which reactions were generated, and a cqs column containing the
-corresponding Cq values. Cq values must be numeric, with non0detects encoded
-as NaN.}
+\item{cq_data}{data frame with a \code{sample} column specifying the names of the
+samples from which reactions were generated, and a \code{cqs} column containing the
+corresponding Cq values. Cq values must be numeric, with non-detects encoded
+as \code{NaN}.}
 
-\item{model}{esc object representing fitted model to use for estimation}
+\item{model}{A \code{esc} object representing fitted model to use for estimation.}
 
-\item{level}{Desired credibily level, defaults to 0.95}
+\item{level}{Numeric. Desired credibility level, defaults to 0.95.}
 
-\item{approximate}{logical. If TRUE (the default), a faster but potentially
+\item{approximate}{Logical. If \code{TRUE} (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
-concentrations}
+concentrations.}
 }
 \value{
-Data frame with an index column specifying the sample index, and lower,
-mle, and upper columns specifying the interval lower bound, maximum likelihood
+Data frame with a \code{sample} column specifying the sample index,
+and \code{lower},
+\code{mle}, and \code{upper} columns specifying the interval
+lower bound, maximum likelihood
 estimate, and interval lower bound for the gene concentration in that sample.
 One row is generated for each unique sample index in the original data frame.
 }
 \description{
 Computes Baysian credible intervals and maximum likelihood estimates for the
 concentrations of multiple samples at once, given Cq data for each sample and
-a single esc model object and specified credible level to use for all the
+a single \code{esc} model object and specified credible level to use for all the
 intervals.
 }

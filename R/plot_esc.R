@@ -1,17 +1,21 @@
-#' Plot Standard Curve Calibration Data
+#' @title Plot Standard Curve Calibration Data
 #'
-#' Given data frame containing concentrations and corresponding Cq values, plots
-#' Cq values against log-transformed concentrations
+#' @description Given a data frame containing concentrations
+#' and corresponding Cq values, plots Cq values against
+#' log-transformed concentrations.
 #'
 #' @param esc_data Data frame containing data to bt used to fit the model. Must
-#' contain a column named "concentrations" with known sample concentrations, and
-#' a column named "cqs" with corresponding Cq values. Non-detects should be
-#' encoded by a cq value of NaN
+#' contain a column named \code{concentrations} with known sample concentrations,
+#'  and a column named \code{cqs} with corresponding Cq values.
+#'  Non-detects should be encoded by a Cq value of \code{NaN}.
 #'
-#' @return ggplot object representing plot
+#' @return A \code{ggplot} object representing plot.
+#'
 #' @export
 #'
 #' @examples
+#'
+#'
 plot_esc_data <- function(esc_data) {
 
   # --- Input checks
@@ -80,7 +84,7 @@ cq_quantile <- function(alpha,
   N0ends <- match(N0maxes, N0s)
 
   quant <- function(conc, N0start, N0end) {
-    uniroot(function(cq) {
+    stats::uniroot(function(cq) {
       sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
             dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
       lower = qnorm(alpha, mean = means[N0end], sd = sigma),
@@ -100,7 +104,7 @@ cq_quantile <- function(alpha,
 #' and are used to estimate contribution of nearby N0 values not included in the
 #' computation.
 #'
-#' @param concentrations numeric concentration at which to evaluate specified
+#' @param conc numeric concentration at which to evaluate specified
 #' quantile
 #' @param alpha quantile level
 #' @param intercept intercept parameter of ESC model
@@ -116,7 +120,7 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
   N0s <- seq(N0start, N0end, by = granularity)
 
   #compute quantile
-  uniroot(function(cq) {
+  stats::uniroot(function(cq) {
     sum(pnorm(cq, mean = intercept + slope * log(N0s), sd = sigma) *
           dpois(N0s, conc) * granularity) - alpha * (1 - exp(-conc))},
     upper = qnorm(alpha, mean = intercept + slope * log(N0start), sd = sigma),
@@ -124,38 +128,38 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 }
 
 
-#' Plot Fitted ESC Model
+#' @title Plot Fitted ESC Model
 #'
-#' Adds fitted median and probability interval of ESC model to plot of Cq vs
-#' Concentration
+#' @description Plots the fitted median and probability interval of
+#' an ESC model Cq vs concentration.
 #'
-#' @param model esc object representing fitted model
-#' @param PI Numeric. Width of the probability interval.
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' @param model \code{esc} object representing fitted model.
+#' @param PI Numeric. Width of the probability interval (must be between 0 and 1).
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return ggplot object representing plot
+#' @return A \code{ggplot} object representing plot.
 #' @export
 #'
 #' @examples
+#'
+#'
 plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
 
   # --- Input checks
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
 
   if(!is.numeric(PI)) {stop("PI must be numeric")}
   if(PI > 1 | PI < 0) {stop("PI must be between 0 and 1")}
 
   if(!is.logical(approximate)) {stop("approximate must be logical")}
 
-
   # --- Cosmetics
   col.ci  = 'steelblue2'
   col.med = 'steelblue3'
   alpha.ci = 0.2
   size.med = 1
-
 
   # --- Quantiles for Cq values
 

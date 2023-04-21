@@ -64,20 +64,23 @@ conc_log_likelihood_factory <- function(cqs, model) {
 
 #' Estimate concentration from Cq values
 #'
-#' Given list of Cq values from a set of technical replicates and fitted ESC
-#' model, generates maximum likelihood estimate of concentration
+#' Given a list of Cq values from a set of technical replicates and
+#' a fitted ESC model, generates a maximum likelihood estimate
+#' of the concentrations.
 #'
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
-#' coded as NaN
-#' @param model `esc` object representing fitted model to use for estimation.
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' coded as \code{NaN}.
+#' @param model \code{esc} object representing a fitted model to use for estimation.
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return MLE of concentration
+#' @return The maximum likelihood estimation of the concentrations.
+#'
 #' @export
 #'
 #' @examples
+#'
 conc_mle <- function(cqs, model, approximate = TRUE) {
 
   # --- Input checks
@@ -86,7 +89,7 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.logical(approximate)) {stop("approximate must be logical")}
   if(all(is.nan(cqs))) {return(0)}
 
@@ -108,40 +111,47 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
   return(res$estimate)
 }
 
-#' Generate credible interval for concentration analytically
+#' @title Generate credible interval for concentration analytically
 #'
-#' Given list of Cq values from a set of technical replicates and fitted ESC
-#' model, generates credible interval of desired level through numerical
-#' integration of the posterior distribution
+#' @description Given list of Cq values from a set of technical replicates
+#' and a fitted ESC model, generates credible interval of desired level
+#' through numerical integration of the posterior distribution.
 #'
 #' @param cqs Numeric vector of Cq values from sample replicates, non-detects
-#' coded as NaN
-#' @param model esc object representing fitted model to use for estimation
-#' @param level Desired credibily level, defaults to 0.95
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' coded as \code{NaN}.
+#' @param model A \code{esc} object representing a fitted model to use for estimation.
+#' @param level Desired credibility level, defaults to 0.95.
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return conc_int object, containing a list interval specifying the lower and
+#' @return A \code{conc_int} object, containing a list interval specifying the lower and
 #' upper bounds of desired credible interval, as well as the maximum likelihood
 #' concentration estimate, and a data frame distribution, containing values of
-#' the pdf and cdf of the posterior distribution evaluated at specified points
+#' the probability density function  and the cumulative density function
+#' of the posterior distribution evaluated at specified points.
+#'
+#'
 #' @export
 #'
 #' @examples
-conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
+#'
+conc_interval <- function(cqs,
+                          model,
+                          level = 0.95,
+                          approximate = TRUE) {
 
   # --- Input checks
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(! inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(!is.logical(approximate)) {stop("approximate must be logical")}
 
-  # --- Deal with case of all non-detects seperately
+  # --- Deal with case of all non-detects separately
   if(all(is.nan(cqs))) {
     n <- length(cqs)
     grid <- seq(from = 0, to = log(10) * 9 / n, length.out = 1001)
@@ -153,24 +163,26 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
   # --- Compute MLE
   if(approximate){
     conc_log_like <- function(conc) {
-      log_likelihood_est(conc, cqs, model$intercept, model$slope / log(10),
-                         model$sigma)
+      log_likelihood_est(conc, cqs,
+                         intercept = model$intercept,
+                         slope = model$slope / log(10),
+                         sigma = model$sigma)
     }
   }
   else {
     conc_log_like <- conc_log_likelihood_factory(cqs, model)
   }
 
-  mle <- nlm(conc_log_like,
-             exp((mean(cqs, na.rm = TRUE) - model$intercept) *
-                   log(10)/model$slope))$estimate
+  mle <- stats::nlm(conc_log_like,
+                    exp((mean(cqs, na.rm = TRUE) - model$intercept) *
+                          log(10)/model$slope))$estimate
 
-  # Compute bounds for numerical intergration
+  # Compute bounds for numerical integration
   threshold <- conc_log_like(mle) + 9 * log(10)
   root_est_factor <- exp(9.21 * model$sigma / abs(model$slope))
-  lb <- uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
+  lb <- stats::uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
                 lower = mle / root_est_factor, extendInt = "downX")$root
-  ub <- uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
+  ub <- stats::uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
                 upper = mle * root_est_factor, extendInt = "upX")$root
   lb <- max(lb, ub/2001)
 
@@ -181,7 +193,7 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 
   # --- Construct and return interval
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
-  interval <- approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
+  interval <- stats::approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
 
   res = new_conc_int(mle, interval, grid, pdf, cdf)
 
@@ -192,28 +204,33 @@ conc_interval <- function(cqs, model, level = 0.95, approximate = TRUE) {
 #'
 #' Computes Baysian credible intervals and maximum likelihood estimates for the
 #' concentrations of multiple samples at once, given Cq data for each sample and
-#' a single esc model object and specified credible level to use for all the
+#' a single \code{esc} model object and specified credible level to use for all the
 #' intervals.
 #'
-#' @param cq_data data frame with an sample column specifying the names of the
-#' samples from which reactions were generated, and a cqs column containing the
-#' corresponding Cq values. Cq values must be numeric, with non0detects encoded
-#' as NaN.
-#' @param model esc object representing fitted model to use for estimation
-#' @param level Desired credibily level, defaults to 0.95
-#' @param approximate logical. If TRUE (the default), a faster but potentially
+#' @param cq_data data frame with a \code{sample} column specifying the names of the
+#' samples from which reactions were generated, and a \code{cqs} column containing the
+#' corresponding Cq values. Cq values must be numeric, with non-detects encoded
+#' as \code{NaN}.
+#' @param model A \code{esc} object representing fitted model to use for estimation.
+#' @param level Numeric. Desired credibility level, defaults to 0.95.
+#' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
-#' concentrations
+#' concentrations.
 #'
-#' @return Data frame with an index column specifying the sample index, and lower,
-#' mle, and upper columns specifying the interval lower bound, maximum likelihood
+#' @return Data frame with a \code{sample} column specifying the sample index,
+#' and \code{lower},
+#' \code{mle}, and \code{upper} columns specifying the interval
+#' lower bound, maximum likelihood
 #' estimate, and interval lower bound for the gene concentration in that sample.
 #' One row is generated for each unique sample index in the original data frame.
+#'
 #' @export
 #'
 #' @examples
+#'
+#'
 multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
-  #input checks
+  # input checks
   if(!"sample" %in% names(cq_data)) {
     stop("cq_data must contain sample column")
   }
@@ -224,13 +241,16 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
   if(!is.logical(approximate)) {stop("approximate must be logical")}
 
   #compute intervals
-  res <- aggregate(cqs ~ sample, data = cq_data, na.action = NULL, FUN =
+  res <- aggregate(cqs ~ sample,
+                   data = cq_data,
+                   na.action = NULL,
+                   FUN =
                      function(cqs) {
                        c(conc_interval(cqs, model, level, approximate)$interval)
                      })

@@ -8,14 +8,15 @@ plot_esc_data(esc_data)
 }
 \arguments{
 \item{esc_data}{Data frame containing data to bt used to fit the model. Must
-contain a column named "concentrations" with known sample concentrations, and
-a column named "cqs" with corresponding Cq values. Non-detects should be
-encoded by a cq value of NaN}
+contain a column named \code{concentrations} with known sample concentrations,
+and a column named \code{cqs} with corresponding Cq values.
+Non-detects should be encoded by a Cq value of \code{NaN}.}
 }
 \value{
-ggplot object representing plot
+A \code{ggplot} object representing plot.
 }
 \description{
-Given data frame containing concentrations and corresponding Cq values, plots
-Cq values against log-transformed concentrations
+Given a data frame containing concentrations
+and corresponding Cq values, plots Cq values against
+log-transformed concentrations.
 }

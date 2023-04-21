@@ -1,13 +1,12 @@
 Package: ecurve
 Title: Enhanced Standard Curve Model
-Version: 0.3.0
+Version: 0.4.0
 Authors@R: 
     person("Liam", "Kusalik", , "first.last@example.com", 
            role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
