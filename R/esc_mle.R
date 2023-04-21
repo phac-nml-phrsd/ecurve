@@ -24,20 +24,23 @@ log_likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
   num_non_detects <- length(cqs) - length(detects)
   cqs <- cqs[detects]
 
-  #determine N0 values at which to perform evaluation
+  # Determine N0 values at which to perform evaluation
   N0start <- max(qpois(1e-15, conc), 1)
-  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
+  N0end   <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
   granularity <- ceiling((N0end - N0start)/100)
   N0s <- seq(N0start, N0end, by = granularity)
 
-  #calculate intermediate results
+  # Calculate intermediate results
   norm_dens <- sapply(N0s, function(N0){
     dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   })
   pois_dens <- dpois(N0s, conc)
 
-  #calculate final log likelyhood
-  sum(-log((norm_dens %*% pois_dens) * granularity), num_non_detects * conc)
+  # Calculate final log likelihood
+  res = sum(-log((norm_dens %*% pois_dens) * granularity),
+            num_non_detects * conc)
+
+  return(res)
 }
 
 #' Calculate cq PDFs under ESC Model
@@ -96,11 +99,18 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 #'
 #' @return negative log likelihood evaluated at the given parameters
 #'
-esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) {
+esc_log_likelihood <- function(params,
+                               concentrations,
+                               cqs,
+                               approximate = TRUE) {
+
   if(params[3] < 0) {return(Inf)}
   else if (approximate) {
-    res <- sum(mapply(log_likelihood_est, conc = concentrations, cqs = cqs,
-                      MoreArgs = list(intercept = params[1], slope = params[2],
+    res <- sum(mapply(log_likelihood_est,
+                      conc = concentrations,
+                      cqs = cqs,
+                      MoreArgs = list(intercept = params[1],
+                                      slope = params[2],
                                       sigma = params[3])))
   }
   else {
@@ -113,7 +123,65 @@ esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) 
   return(res)
 }
 
+#' @title Check the input of the function `esc_mle()`.
+#'
+#' @param esc_data Dataframe. See \code{esc_mle()}.
+#' @param approximate Logical. See \code{esc_mle()}.
+#' @param assumeND Logical. See \code{esc_mle()}.
+#'
+#' @return A list containing formated \code{concentrations} and \code{cqs}.
+#'
+check_input_esc_mle <- function(esc_data, approximate, assumeND) {
 
+  # Handle tibbles:
+  q = class(esc_data)
+  if(q[1] == 'tbl_df') esc_data = as.data.frame(esc_data)
+
+  if(!is.data.frame(esc_data)) {stop("esc_data must be a data frame")}
+  if(!"concentrations" %in% names(esc_data)) {
+    stop("esc_data must contain concentrations column")
+  }
+  if(!"cqs" %in% names(esc_data)) {
+    stop("esc_data must contain cqs column")
+  }
+
+  concentrations <- esc_data[,"concentrations"]
+  cqs            <- esc_data[,"cqs"]
+
+  if(!all(is.numeric(concentrations))) {stop("concentrations must be numeric")}
+  if(!all(concentrations >= 0 & is.finite(concentrations))) {
+    stop("concentrations must be non-negative real numbers")
+  }
+
+  # Translate non-numeric Cqs into NaN which
+  # is the coding for non-detect in this library:
+  if(!is.logical(assumeND)) {stop("`assumeND` must be logical.")}
+  if(assumeND){
+    tmp = suppressWarnings(as.numeric(cqs))
+    n.na = sum(is.na(tmp))
+    if(n.na > 0){
+      warning('`esc_mle()`: there were ',n.na,
+              ' Cq values were assumed non-detects because they were inputed as non-numeric.')
+    }
+    tmp[is.na(tmp)] <- NaN
+    cqs <- tmp
+  }
+  if(!assumeND){
+    if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+    if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+      stop("cqs must be non-negative real numbers or NaN.")
+    }
+  }
+
+  if(!all(cqs[!is.nan(cqs)]>0)) stop("cqs must be non-negative")
+
+  if(length(concentrations) != length(cqs)) {
+    stop("concentrations and cqs must be the same length.")
+  }
+  if(!is.logical(approximate)) {stop("`approximate` must be logical.")}
+
+  return(list(concentrations = concentrations, cqs=cqs))
+}
 
 #' @title Fit ESC Model Using Maximum Likelihood Estimation.
 #'
@@ -128,6 +196,8 @@ esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) 
 #' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
 #' concentrations.
+#' @param assumeND Logical. If \code{TRUE} (the default), any non numerical
+#' Cq values in the dataframe \code{esc_data} is assumed a non-detect (ND).
 #'
 #' @return An \code{esc} object representing fitted model.
 #'
@@ -135,32 +205,14 @@ esc_log_likelihood <- function(params, concentrations, cqs, approximate = TRUE) 
 #'
 #' @example
 #'
-esc_mle <- function(esc_data, approximate = TRUE) {
+esc_mle <- function(esc_data,
+                    approximate = TRUE,
+                    assumeND = TRUE) {
 
   # --- Inputs Checks
-
-  if(!is.data.frame(esc_data)) {stop("esc_data must be a data frame")}
-  if(!"concentrations" %in% names(esc_data)) {
-    stop("esc_data must contain concentrations column")
-  }
-  if(!"cqs" %in% names(esc_data)) {
-    stop("esc_data must contain cqs column")
-  }
-
-  concentrations <- esc_data[,"concentrations"]
-  cqs <- esc_data[,"cqs"]
-  if(!all(is.numeric(concentrations))) {stop("concentrations must be numeric")}
-  if(!all(concentrations >= 0 & is.finite(concentrations))) {
-    stop("concentrations must be non-negative real numbers")
-  }
-  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
-  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
-    stop("cqs must be non-negative real numbers or NaN")
-  }
-  if(length(concentrations) != length(cqs)) {
-    stop("concentrations and cqs must be the same length")
-  }
-  if(!is.logical(approximate)) {stop("approximate must be logical")}
+  chk            = check_input_esc_mle(esc_data, approximate, assumeND)
+  cqs            = chk$cqs
+  concentrations = chk$concentrations
 
   # --- Filter out the non-detects
   detects <- !is.nan(cqs)
@@ -181,10 +233,6 @@ esc_mle <- function(esc_data, approximate = TRUE) {
              concentrations = concentrations,
              cqs = cqs,
              approximate = approximate)
-
-  intercept = res$estimate[1]
-  slope     = res$estimate[2]
-  sigma     = res$estimate[3]
 
   m = new_esc(intercept = res$estimate[1],
               slope = res$estimate[2] * log(10),

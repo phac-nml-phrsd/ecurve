@@ -4,7 +4,7 @@
 \alias{esc_mle}
 \title{Fit ESC Model Using Maximum Likelihood Estimation.}
 \usage{
-esc_mle(esc_data, approximate = TRUE)
+esc_mle(esc_data, approximate = TRUE, assumeND = TRUE)
 }
 \arguments{
 \item{esc_data}{Data frame containing data to be used to fit the model. Must
@@ -15,6 +15,9 @@ encoded by a Cq value of \code{NaN}.}
 \item{approximate}{Logical. If \code{TRUE} (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
 concentrations.}
+
+\item{assumeND}{Logical. If \code{TRUE} (the default), any non numerical
+Cq values in the dataframe \code{esc_data} is assumed a non-detect (ND).}
 }
 \value{
 An \code{esc} object representing fitted model.
