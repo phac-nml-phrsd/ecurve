@@ -266,9 +266,6 @@ conc_mcmc <- function(cqs, model, level = 0.95){
     stop("package 'runjags' must be installed to use mcmc functions")
   }
   test <- runjags::testjags(silent = TRUE)
-  if(!test$rjags.found) {
-    stop("package 'rjags' must be installed to use mcmc functions")
-  }
   if(!test$JAGS.found) {
     stop("JAGS software must be installed to use mcmc functions")
   }
@@ -342,9 +339,6 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
     stop("package 'runjags' must be installed to use mcmc functions")
   }
   test <- runjags::testjags(silent = TRUE)
-  if(!test$rjags.found) {
-    stop("package 'rjags' must be installed to use mcmc functions")
-  }
   if(!test$JAGS.found) {
     stop("JAGS software must be installed to use mcmc functions")
   }

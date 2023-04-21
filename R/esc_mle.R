@@ -218,9 +218,6 @@ esc_mcmc <- function(esc_data, level = 0.95) {
     stop("package 'runjags' must be installed to use mcmc functions")
   }
   test <- runjags::testjags(silent = TRUE)
-  if(!test$rjags.found) {
-    stop("package 'rjags' must be installed to use mcmc functions")
-  }
   if(!test$JAGS.found) {
     stop("JAGS software must be installed to use mcmc functions")
   }
@@ -261,7 +258,7 @@ esc_mcmc <- function(esc_data, level = 0.95) {
                                data = list(n = length(cqs), cq = cqs,
                                            conc = concentrations),
                                monitor = c("alpha", "beta", "eff", "sigma"),
-                               thin = 10,
+                               thin = 4,
                                inits = function() {
                                  naive_sc <- lm(cqs ~ log(concentrations))
                                  list(alpha = coef(naive_sc)[1],
