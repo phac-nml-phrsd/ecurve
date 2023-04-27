@@ -20,21 +20,27 @@ conc_log_likelihood_factory <- function(cqs, model) {
   num_non_detects <- length(cqs) - length(detects)
   cqs <- cqs[detects]
 
+  #bouds of N0 values for which normal densities have been stored
   N0max <- N0min <- max(round(exp((mean(cqs) - intercept)/slope)), 1)
 
+  #function for generating normal densities
   gen_norm_densities <- function(N0) {
     dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   }
 
+  #stored normal densities, for reuse between calls of generated function
   norm_densities <- gen_norm_densities(N0max)
 
   function(concentration) {
 
+    #check for negative concentration
     if(concentration < 0) {return(Inf)}
 
+    #calculate bounds on N0 for summation
     N0start <- max(qpois(1e-15, concentration), 1)
     N0end   <- max(qpois(1e-15, concentration, lower.tail = FALSE), N0start + 1)
 
+    #calculate and store new normal densities if required, and update bounds
     if (N0start < N0min) {
       norm_densities <<- cbind(sapply(N0start:(N0min - 1), gen_norm_densities),
                                norm_densities)
@@ -47,6 +53,7 @@ conc_log_likelihood_factory <- function(cqs, model) {
       N0max <<- N0end
     }
 
+    #values to sum over
     N0s <- N0start:N0end
 
     # --- Likelihood components
