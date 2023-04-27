@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 ## Introduction and Background
 
-This document provides an introduction to `ecurve`, an R library that implements the Enhanced Standard Curve (ESC) model for constructing qPCR standard curves and producing concentration estimates from qPCR data using such curves. Unlike more traditional methods of standard curve construction, the ESC Model additionally allows for the quantification of the uncertainty in these estimates through the construction of Bayesian credible intervals. As it is primarily indented to provide an introduction to the `ecurve` package, this vignette only provides a brief overview of the ESC model; for a more detailed discussion of the theory and motivation behind the model, consult [this paper](https://doi.org/10.3389/fmicb.2023.1048661)
+This document provides an introduction to `ecurve`, an R library that implements the Enhanced Standard Curve (ESC) model for interpreting qPCR standard curve data and producing concentration estimates from one or more technical replicates. Unlike more traditional methods of standard curve fitting, the ESC Model additionally allows for the quantification of the uncertainty in these estimates through the construction of Bayesian credible intervals. As it is primarily intended to provide an introduction to the `ecurve` package, this vignette only provides a brief overview of the ESC model; for a more detailed discussion of the theory and motivation behind the model, consult [Realizing the value in “non-standard” parts of the qPCR standard curve by integrating fundamentals of quantitative microbiology](https://doi.org/10.3389/fmicb.2023.1048661) (Schmidt et. al., 2023)
 
 The remainder of this section provides a brief description of the ESC model, while later sections illustrate the application of the model through the `ecurve` package, to an example qPCR dataset. The same dataset will also be analyzed using established standard curve methods in order to show the contrast between the two approaches.
 
@@ -24,14 +24,14 @@ The ESC model is a hierarchical model that attempts to capture the randomness in
 
 The initial number of gene copies in a given reaction, $N_0$, is modeled as a Poisson distribution 
 $$N_0 \sim Poisson(\lambda)$$ 
-where $\lambda$ is the concentration of the gene in the sample from which the reaction was prepared. 
+where $\lambda$ is the concentration per reaction volume of the gene in the sample from which the reaction was prepared. 
 
 The case of $N_0 = 0$ is assumed to correspond to non-detects, that is, every reaction beginning with $N_0 = 0$ will produce a non-detect, and any observed non-detects are assumed to have been generated in this manner. Otherwise, as in traditional standard curve modelling, it is assumed that the $C_q$ value obtained during qPCR has a linear relationship with $\log_{10} N_0$, but for the ESC model we additionally assume that the measured $C_q$ values vary around this theoretical value according to a normal distribution with variance $\sigma^2$ independent of $N_0$:
 
 $$C_q | N_0 \sim \mathcal{N}(\alpha + \beta \log_{10} N_0, \sigma^2)$$ 
 Together, these assumptions fully determine the probability of detection and the expected distribution of $C_q$ values conditional on detection for any sample concentration, and hence fully specify the model. The `ecurve` package provides mechanisms for fitting the model based on qPCR data from samples of known concentration via maximum likelihood estimation (MLE) of the (a priori) unknown parameters $\alpha$, $\beta$ and $\sigma$.
 
-We also note that as in traditional standard curve analysis, the slope parameter $\beta$ can be given a theoretical interpretation by relating it to the PCR efficiency $E$, which is defined as the average number of gene copies duplicated during each PCR cycle. For a reaction with $N_0$ initial gene copies, the number of gene copies after $c$ cycles id given by $N_0(1 + E)^c$. Thus, since the $C_q$ value is a measurement of the number of cycles required to reach some threshold number $N_f$ of gene copies, we have
+We also note that as in traditional standard curve analysis, the slope parameter $\beta$ can be given a theoretical interpretation by relating it to the PCR efficiency $E$, which is defined as the average number of gene copies duplicated during each PCR cycle. For a reaction with $N_0$ initial gene copies, the number of gene copies after $c$ cycles is given by $N_0(1 + E)^c$. Thus, since the $C_q$ value is a measurement of the number of cycles required to reach some threshold fluorescence corresponding to some number $N_f$ of gene copies, we have
 
 $$N_f = N_0(1 + E)^{C_q}$$
 Taking logarithms on both sides and solving for $C_q$ in terms of $N_0$, we obtain
@@ -46,7 +46,7 @@ and therefore the PCR efficiency $E$ is given by
 $$E = 10^{-1/\beta} - 1$$
 Also, note that since the PCR efficiency is constrained by $0 < E < 1$, it follows that the slope parameter is constrained by $\beta < -\frac{1}{\log_{10} 2} \approx -3.32$
 
-In addition to fitting the ESC model, the `ecurve` package provides functionality for performing the MLE via the `esc_mle()` function, for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle()` function. 
+In addition to fitting the ESC model, the `ecurve` package provides functionality for performing maximum likelyhood estimation of the parameters $\alpha$, $\beta$ and $sigma$ via the `esc_mle()` function, and for estimating the concentration of an unknown sample from qPCR data and a fitted model via the `conc_mle()` function. 
 Moreover, the function `conc_interval()` provides a Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate. 
 The `multi_interval()` function is also provided for performing concentration estimations for multiple samples at once using the same standard curve.
 
@@ -83,7 +83,7 @@ test.data$cqs <- as.numeric(test.data$cqs)
 
 ## Model Fitting
 
-To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe of the known concentrations and $C_q$ values used to calibrate the model.
+To fit the ESC model to the data, we use the `esc_mle()` function. This function takes a dataframe of the known concentrations and $C_q$ values used to fit the model.
 
 The model is fit using MLE, and the function returns an object containing the fitted model parameters $\alpha$ (named as `intercept`), $\beta$ (named as `slope`) and $\sigma$ (named as `sigma`); `eff`, an estimate of the qPCR efficiency; and `data`, a copy of the original data.
 
@@ -154,8 +154,8 @@ conc_mle(samp7_cqs, model = model)
 conc_mle(samp8_cqs, model = model)
 ```
 
-The function `conc_mle()` provides the "best" estimates, according to the MLE method (i.e. the parameter value that maximize the likelihood of the data). 
-We can also quantify the uncertainty in these estimates using the `conc_interval()` function. This function uses numerical Bayesian estimation to compute the posterior concentration distribution given the $C_q$ data and fitted model, assuming a uniform prior, and construct a credible interval for the concentration. 
+The function `conc_mle()` provides the "best" estimates, according to the MLE method (i.e. the parameter value that maximizes the likelihood of the data). 
+We can also quantify the uncertainty in these estimates using the `conc_interval()` function. This function uses numerical methods to compute the Bayesian posterior concentration distribution given the $C_q$ data and fitted model, assuming a uniform prior, and constructs a credible interval for the concentration. In the case of all non-detects, a one-sided credible interval is produced, while in all other cases a two-sided, equal tailed interval is used.
 The credible level of the interval can be controlled using the optional `level` parameter, which defaults to 0.95 if not specified. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval
 ```{r concentration_intervals}
 samp3_int <- conc_interval(samp3_cqs, model = model)
