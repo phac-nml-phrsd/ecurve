@@ -266,6 +266,15 @@ esc_mcmc <- function(esc_data, level = 0.95) {
                                       log2sigma = log(sigma(naive_sc), base = 2))
                                })
 
+  #check effective sample sizes
+  if(any(results$summaries[,9] < 100)) {
+    warning(paste0("Low effective sample sizes (less than 100) for estimates of",
+                   "parametes ",
+                   paste0(rownames(results$summaries)[which(results$summaries[,9] < 100)],
+                          collapse = ", "),
+                   ". Results may be unreliable."))
+  }
+
   #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
   extract_int <- function(param) {

@@ -304,6 +304,12 @@ conc_mcmc <- function(cqs, model, level = 0.95){
                                  list(conc = exp((mean(mod_cqs) - intercept)/slope))
                                })
 
+  #check effective sample size
+  if(results$summaries[1,9] < 100) {
+    warning(paset0("Low effective sample size (less than 100). Results may be",
+            "unreliable - consider using numerical integration instead."))
+  }
+
   #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
   interval <- as.list(results$summaries[,c(1, 2, 4, 3)])
@@ -387,6 +393,16 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
                                                        FUN = mean)$cqs
                                  list(conc = exp((mean_cqs - intercept)/slope))
                                })
+
+  #check effective sample sizes
+  if(any(results$summaries[,9] < 100)) {
+    warning(paste0("Low effective sample sizes (less than 100) for concentration",
+                   " estimates for samples ",
+                   paste0(samples[which(results$summaries[,9] < 100)],
+                          collapse = ", "),
+                   ". Results may be unreliable - consider using numerical",
+                   " integration instead"))
+  }
 
   #process and return results
   results <- runjags::add.summary(results, confidence = c(level))
