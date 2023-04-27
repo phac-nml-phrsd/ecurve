@@ -260,3 +260,177 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   res[] <- lapply(res, unlist)
   return(res)
 }
+
+#' MCMC Estimation of Concentrations Using ESC Model
+#'
+#' Given list of Cq values from a set of technical replicates and fitted ESC
+#' model, generates credible interval of desired level by approximating the
+#' posterior distribution for concentration using MCMC sampling. Requires
+#' installation of JAGS and the rjags and runjags packages
+#'
+#' @param cqs Numeric vector of Cq values from sample replicates, non-detects
+#' coded as NaN
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credible level, defaults to 0.95
+#'
+#' @return A list of two elements. The first, named interval, is a list
+#' containing the bounds of the credible interval, along with the mean and median
+#' of the generated posterior samples. The second, named mcmc_samples, is the
+#' object produced by the runjags package representing the generated samples
+#' @export
+#'
+#' @examples
+conc_mcmc <- function(cqs, model, level = 0.95){
+  #software checks
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
+
+  # --- Input checks
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+
+  #unpack model
+  intercept <- model$intercept
+  slope <- model$slope / log(10)
+  sigma <- model$sigma
+
+  #pre-process inputs
+  n <- length(cqs)
+  nds <- is.nan(cqs)
+  cqs[which(nds)] <- NA
+
+  #run mcmc sampling with jags
+  results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
+                                           package = "ecurve"),
+                               data = list(n = n, cq = cqs, ND = as.numeric(nds),
+                                           k = 1, index = rep(1, n),
+                                           alpha = intercept, beta = slope,
+                                           sigma = sigma),
+                               monitor = c("conc"),
+                               thin = 4,
+                               inits = function() {
+                                 mod_cqs <- cqs
+                                 mod_cqs[which(nds)] <- intercept
+                                 list(conc = exp((mean(mod_cqs) - intercept)/slope))
+                               })
+
+  #check effective sample size
+  if(results$summaries[1,9] < 100) {
+    warning(paset0("Low effective sample size (less than 100). Results may be",
+            "unreliable - consider using numerical integration instead."))
+  }
+
+  #process and return results
+  results <- runjags::add.summary(results, confidence = c(level))
+  interval <- as.list(results$summaries[,c(1, 2, 4, 3)])
+  names(interval) <- c("lower", "median", "mean", "upper")
+  return(list(interval = interval, mcmc_samples = results))
+}
+
+#' MCMC Estimation of Concentrations for Multiple Samples at Once
+#'
+#' Computes Baysian credible intervals for the concentrations of multiple samples
+#' at once, given Cq data for each sample and a single esc model object and
+#' specified credible level to use for all the intervals. Uses MCMC sampling to
+#' approximate the posterior distribution. Requires installation of JAGS and the
+#' rjags and runjags packages
+#'
+#' @param cq_data data frame with an sample column specifying the names of the
+#' samples from which reactions were generated, and a cqs column containing the
+#' corresponding Cq values. Cq values must be numeric, with non0detects encoded
+#' as NaN.
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credible level, defaults to 0.95
+#'
+#' @return A list of two elements. The first, named interval, is a data frame
+#' containing the bounds of the credible intervals, along with the means and
+#' medians of the generated posteriorsamples. The second, named mcmc_samples,
+#' is the object produced by the runjags package representing the generated
+#' samples.
+#' @export
+#'
+#' @examples
+multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
+  #software checks
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
+
+  #input checks
+  if(!"sample" %in% names(cq_data)) {
+    stop("cq_data must contain sample column")
+  }
+  if(!"cqs" %in% names(cq_data)) {
+    stop("cq_data must contain cqs column")
+  }
+  if(!all(is.numeric(cq_data$cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+
+  #unpack model
+  intercept <- model$intercept
+  slope <- model$slope / log(10)
+  sigma <- model$sigma
+
+  #pre-process inputs
+  nds <- is.nan(cq_data$cqs)
+  cq_data$cqs[which(nds)] <- NA
+  samples <- unique(cq_data$sample)
+
+  #run mcmc sampling with jags
+  results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
+                                           package = "ecurve"),
+                               data = list(n = dim(cq_data)[1], cq = cq_data$cqs,
+                                           ND = as.numeric(nds), k = length(samples),
+                                           index = match(cq_data$sample, samples),
+                                           alpha = intercept, beta = slope,
+                                           sigma = sigma),
+                               monitor = c("conc"),
+                               thin = 4,
+                               inits = function() {
+                                 mod_cq_data <- cq_data
+                                 mod_cq_data$cqs[which(nds)] <- intercept
+                                 mean_cqs <- aggregate(cqs ~ sample,
+                                                       data = mod_cq_data,
+                                                       FUN = mean)$cqs
+                                 list(conc = exp((mean_cqs - intercept)/slope))
+                               })
+
+  #check effective sample sizes
+  if(any(results$summaries[,9] < 100)) {
+    warning(paste0("Low effective sample sizes (less than 100) for concentration",
+                   " estimates for samples ",
+                   paste0(samples[which(results$summaries[,9] < 100)],
+                          collapse = ", "),
+                   ". Results may be unreliable - consider using numerical",
+                   " integration instead"))
+  }
+
+  #process and return results
+  results <- runjags::add.summary(results, confidence = c(level))
+  intervals <- data.frame(sample = samples,
+                          lower = results$summaries[,1],
+                          median = results$summaries[,2],
+                          mean = results$summaries[,4],
+                          upper = results$summaries[,3])
+  rownames(intervals) <- NULL
+  return(list(intervals = intervals, mcmc_samples = results))
+}

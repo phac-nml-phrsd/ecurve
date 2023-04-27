@@ -1,0 +1,22 @@
+#jags model for estimating esc model parameters
+#assumes non-detects have been filtered out of input data
+
+model {
+  #distribution of cq values for each observed data point, as function of model
+  #parameters. n represents number of observations
+  for (i in 1:n) {
+    #distribution of N0 values gien concentration, conditional on detection
+    N0[i] ~ dpois(conc[i]) T(1,)
+    #distribution of Cq values given N0 value
+    cq[i] ~ dnorm(alpha + beta * log(N0[i]) / log(10), 1/sigma^2)
+  }
+
+  #priors for model parameters
+  alpha ~ dunif(0, 50) #model intercept
+  eff ~ dunif(0, 1) #pcr efficiency
+  log2sigma ~ dunif(-10, 1) #log of sigma
+
+  #additional parameters derived from those specified above
+  beta <- -log(10)/log(1 + eff) #model slope
+  sigma <- 2^log2sigma
+}
