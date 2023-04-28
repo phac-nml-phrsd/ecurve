@@ -1,10 +1,13 @@
 Package: ecurve
 Title: Enhanced Standard Curve Model
 Version: 0.4.0
-Authors@R: 
-    person("Liam", "Kusalik", , "first.last@example.com", 
-           role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+Authors@R: c(
+    person("Liam", "Kusalik", , "ltfkusaik@uwaterloo.ca", 
+           role = c("aut", "cre")),
+    person("David", "Champredon", , "david.champredon@canada.ca", 
+            role = c("aut"),
+            comment = c(ORCID = "0000-0002-7090-8757"))
+    )
 Description: What the package does (one paragraph).
 License: MIT + file LICENSE
 Encoding: UTF-8
