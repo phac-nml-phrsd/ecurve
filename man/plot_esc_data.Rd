@@ -4,13 +4,16 @@
 \alias{plot_esc_data}
 \title{Plot Standard Curve Calibration Data}
 \usage{
-plot_esc_data(esc_data)
+plot_esc_data(esc_data, xlimits = NULL)
 }
 \arguments{
 \item{esc_data}{Data frame containing data to bt used to fit the model. Must
 contain a column named \code{concentrations} with known sample concentrations,
 and a column named \code{cqs} with corresponding Cq values.
 Non-detects should be encoded by a Cq value of \code{NaN}.}
+
+\item{xlimits}{Optional numeric vector of length 2. If provided, passed to
+\code{ggplot2} to specify x-axis limits of plot}
 }
 \value{
 A \code{ggplot} object representing plot.

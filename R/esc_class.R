@@ -22,3 +22,19 @@ new_esc <- function(intercept, slope, sigma, data = NULL) {
               data = data)
   structure(res, class = "esc")
 }
+
+#' Create Esc Objects With Specified Parameters
+#'
+#' Creates \code{esc} object, given parameters intercept, eff, and sigma
+#'
+#' @param intercept intercept parameter of ESC model.
+#' @param eff qpcr efficiency.
+#' @param sigma sigma parameter of ESC model.
+#'
+#' @return \code{esc} object
+#' @export
+#'
+#' @examples
+gen_esc <- function(intercept, eff, sigma) {
+  return(new_esc(intercept, -1/log10(1 + eff), sigma))
+}

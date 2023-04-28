@@ -105,7 +105,7 @@ esc_log_likelihood <- function(params,
                                approximate = TRUE) {
 
   if(params[3] < 0) {return(Inf)}
-  else if (approximate) {
+  if (approximate) {
     res <- sum(mapply(log_likelihood_est,
                       conc = concentrations,
                       cqs = cqs,
@@ -228,17 +228,37 @@ esc_mle <- function(esc_data,
 
   init <- c(unname(coef(naive_sc)), sigma(naive_sc))
 
-  res <- nlm(f = esc_log_likelihood,
-             p = init,
-             concentrations = concentrations,
-             cqs = cqs,
-             approximate = approximate)
+  res <- suppressWarnings(nlm(f = esc_log_likelihood,
+                              p = init,
+                              concentrations = concentrations,
+                              cqs = cqs,
+                              approximate = approximate))
 
-  m = new_esc(intercept = res$estimate[1],
-              slope = res$estimate[2] * log(10),
-              sigma = res$estimate[3],
-              data = data.frame(concentrations = concentrations,
-                                cqs = cqs))
+  #if slope does not exceed -1/log(2), meaning efficiency does not exceed 1,
+  #create esc object using results as is
+  if(res$estimate[2] <= -1/log(2)) {
+    m <- new_esc(intercept = res$estimate[1],
+                slope = res$estimate[2] * log(10),
+                sigma = res$estimate[3],
+                data = data.frame(concentrations = concentrations,
+                                  cqs = cqs))
+  }
+  #otherwise, force slope to be -1/log(2) and re-optimize before creating esc object
+  else {
+    res <- suppressWarnings(nlm(f = function(params){
+                                    esc_log_likelihood(c(params[1], -1/log(2), params[2]),
+                                                       concentrations = concentrations,
+                                                       cqs = cqs,
+                                                       approximate = approximate)},
+                                p = c(res$estimate[1], res$estimate[3]))
+
+    )
+    m <- new_esc(intercept = res$estimate[1],
+                slope = -1/log10(2),
+                sigma = res$estimate[2],
+                data = data.frame(concentrations = concentrations,
+                                  cqs = cqs))
+  }
   return(m)
 }
 
@@ -312,6 +332,7 @@ esc_mcmc <- function(esc_data, level = 0.95) {
                                            conc = concentrations),
                                monitor = c("alpha", "beta", "eff", "sigma"),
                                thin = 4,
+                               n.chains = 2,
                                inits = function() {
                                  naive_sc <- lm(cqs ~ log(concentrations))
                                  list(alpha = coef(naive_sc)[1],

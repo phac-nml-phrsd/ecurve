@@ -8,6 +8,8 @@
 #' contain a column named \code{concentrations} with known sample concentrations,
 #'  and a column named \code{cqs} with corresponding Cq values.
 #'  Non-detects should be encoded by a Cq value of \code{NaN}.
+#' @param xlimits Optional numeric vector of length 2. If provided, passed to
+#' \code{ggplot2} to specify x-axis limits of plot
 #'
 #' @return A \code{ggplot} object representing plot.
 #'
@@ -16,7 +18,7 @@
 #' @examples
 #'
 #'
-plot_esc_data <- function(esc_data) {
+plot_esc_data <- function(esc_data, xlimits = NULL) {
 
   # --- Input checks
 
@@ -49,10 +51,10 @@ plot_esc_data <- function(esc_data) {
 
   plot <- ggplot2::ggplot(esc_data, ggplot2::aes(x = concentrations, y = cqs)) +
     ggplot2::geom_point(na.rm = TRUE, size = 3, alpha = 0.4) +
-    ggplot2::scale_x_log10() +
+    ggplot2::scale_x_continuous(trans = "log10", limits = xlimits) +
     ggplot2::theme(
       panel.grid.minor.x = ggplot2::element_blank())+
-    ggplot2::labs(x = 'Concentration', y = 'Cq')
+    ggplot2::labs(x = 'Concentration (gc/rxn)', y = 'Cq')
 
   return(plot)
 }
@@ -135,6 +137,10 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 #'
 #' @param model \code{esc} object representing fitted model.
 #' @param PI Numeric. Width of the probability interval (must be between 0 and 1).
+#' @param title String. The title of the plot. If unspecified, defaults to "ESC
+#' model fit"
+#' @param xlimits Optional numeric vector of length 2. If provided, passed to
+#' \code{ggplot2} to specify x-axis limits of plot
 #' @param approximate Logical. If \code{TRUE} (the default), a faster but potentially
 #' less accurate approximation for the likelihood function will be used at high
 #' concentrations.
@@ -145,7 +151,8 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 #' @examples
 #'
 #'
-plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
+plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",
+                           xlimits = NULL, approximate = TRUE) {
 
   # --- Input checks
   if(!inherits(model, 'esc')) {stop("model is not an esc object")}
@@ -154,6 +161,8 @@ plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
   if(PI > 1 | PI < 0) {stop("PI must be between 0 and 1")}
 
   if(!is.logical(approximate)) {stop("approximate must be logical")}
+
+  if(!is.character(title) | !length(title) == 1) {stop("title must be a string")}
 
   # --- Cosmetics
   col.ci  = 'steelblue2'
@@ -184,7 +193,7 @@ plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
   cq_quants <- as.data.frame(cq_quants)
 
   # --- Generate plot
-  g.data = plot_esc_data(model$data)
+  g.data = plot_esc_data(model$data, xlimits)
 
   g.model = g.data +
     ggplot2::geom_line(data = cq_quants, ggplot2::aes(x = concentrations,
@@ -194,7 +203,7 @@ plot_esc_model <- function(model, PI = 0.95, approximate = TRUE) {
                                                         ymin = low, ymax = high,
                                                         y = median),
                          alpha = alpha.ci, fill = col.ci)+
-    ggplot2::labs(title = "ESC model fit",
+    ggplot2::labs(title = title,
                   subtitle = paste0('Median and ',
                                     round(PI*100),'%PI'))
 

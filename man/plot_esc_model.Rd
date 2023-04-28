@@ -4,12 +4,24 @@
 \alias{plot_esc_model}
 \title{Plot Fitted ESC Model}
 \usage{
-plot_esc_model(model, PI = 0.95, approximate = TRUE)
+plot_esc_model(
+  model,
+  PI = 0.95,
+  title = "ESC model fit",
+  xlimits = NULL,
+  approximate = TRUE
+)
 }
 \arguments{
 \item{model}{\code{esc} object representing fitted model.}
 
 \item{PI}{Numeric. Width of the probability interval (must be between 0 and 1).}
+
+\item{title}{String. The title of the plot. If unspecified, defaults to "ESC
+model fit"}
+
+\item{xlimits}{Optional numeric vector of length 2. If provided, passed to
+\code{ggplot2} to specify x-axis limits of plot}
 
 \item{approximate}{Logical. If \code{TRUE} (the default), a faster but potentially
 less accurate approximation for the likelihood function will be used at high
