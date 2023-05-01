@@ -157,6 +157,12 @@ plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",
   # --- Input checks
   if(!inherits(model, 'esc')) {stop("model is not an esc object")}
 
+  if(is.null(model$data)){
+    message('The ESC model object input does not contain `data`. \n',
+    'The function `plot_esc_model()` can only plot ESC object with data. Returning no plot.')
+   return(NULL)
+  }
+
   if(!is.numeric(PI)) {stop("PI must be numeric")}
   if(PI > 1 | PI < 0) {stop("PI must be between 0 and 1")}
 
@@ -165,6 +171,7 @@ plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",
   if(!is.character(title) | !length(title) == 1) {stop("title must be a string")}
 
   # --- Cosmetics
+
   col.ci  = 'steelblue2'
   col.med = 'steelblue3'
   alpha.ci = 0.2
