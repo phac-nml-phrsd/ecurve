@@ -160,7 +160,7 @@ check_input_esc_mle <- function(esc_data, approximate, assumeND) {
     tmp = suppressWarnings(as.numeric(cqs))
     n.na = sum(is.na(tmp))
     if(n.na > 0){
-      warning('`esc_mle()`: there were ',n.na,
+      warning('`esc_mle()`: ',n.na,
               ' Cq values were assumed non-detects because they were inputed as non-numeric.')
     }
     tmp[is.na(tmp)] <- NaN
