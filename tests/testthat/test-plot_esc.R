@@ -20,8 +20,6 @@ test_that("data plot input checks work", {
   df <- data.frame(concentrations = c(1, -1), cqs = c(1, 2))
   expect_error(plot_esc_data(df), "concentrations must be non-negative")
 
-  df <- data.frame(concentrations = c(1, 2, 3), cqs = c(1, 2))
-  expect_error(plot_esc_data(df), "concentrations and cqs must be the same length")
 })
 
 test_that("model plotting input checks work", {

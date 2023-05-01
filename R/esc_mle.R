@@ -175,9 +175,6 @@ check_input_esc_mle <- function(esc_data, approximate, assumeND) {
 
   if(!all(cqs[!is.nan(cqs)]>0)) stop("cqs must be non-negative")
 
-  if(length(concentrations) != length(cqs)) {
-    stop("concentrations and cqs must be the same length.")
-  }
   if(!is.logical(approximate)) {stop("`approximate` must be logical.")}
 
   return(list(concentrations = concentrations, cqs=cqs))
@@ -313,9 +310,6 @@ esc_mcmc <- function(esc_data, level = 0.95) {
   if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
-  }
-  if(length(concentrations) != length(cqs)) {
-    stop("concentrations and cqs must be the same length")
   }
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}

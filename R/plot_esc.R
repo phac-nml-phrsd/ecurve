@@ -41,9 +41,6 @@ plot_esc_data <- function(esc_data, xlimits = NULL) {
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(length(concentrations) != length(cqs)) {
-    stop("concentrations and cqs must be the same length")
-  }
 
   # --- Generate plot
 
