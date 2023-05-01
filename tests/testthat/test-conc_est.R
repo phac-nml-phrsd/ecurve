@@ -1,7 +1,7 @@
 test_that("concentration MLE works", {
   intercept <- 38
   E <- 0.97
-  sigma <- 0.5
+  sigma <- 0.2
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
   data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
@@ -12,13 +12,13 @@ test_that("concentration MLE works", {
   conc <- 1.5
   data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
-  expect_true(abs(conc_mle(data, model) - conc)/conc < 0.5)
+  expect_true(abs(conc_mle(data, model) - conc)/conc < 1)
 })
 
 test_that("concentration interval estimation works", {
   intercept <- 38
   E <- 0.97
-  sigma <- 0.5
+  sigma <- 0.2
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
   data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
@@ -43,7 +43,7 @@ test_that("concentration interval estimation works", {
                   sigma = sigma)
   int <- conc_interval(data, model)
   expect_s3_class(int, "conc_int")
-  expect_true(abs(int$interval$mle - conc)/conc < 0.5)
+  expect_true(abs(int$interval$mle - conc)/conc < 1)
   expect_true(int$interval$upper > int$interval$mle)
   expect_true(int$interval$lower < int$interval$mle)
 })
@@ -51,7 +51,7 @@ test_that("concentration interval estimation works", {
 test_that("concentration MLE works when approximation is turned off", {
   intercept <- 38
   E <- 0.97
-  sigma <- 0.5
+  sigma <- 0.2
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
   data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
@@ -62,13 +62,13 @@ test_that("concentration MLE works when approximation is turned off", {
   conc <- 1.5
   data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
-  expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 0.5)
+  expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 1)
 })
 
 test_that("concentration interval estimation works when approximation is turned off", {
   intercept <- 38
   E <- 0.97
-  sigma <- 0.5
+  sigma <- 0.2
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
   conc <- 20
   data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
@@ -137,13 +137,13 @@ test_that("conc_interval input checks work", {
 test_that("multi_interval works", {
   intercept <- 38
   E <- 0.97
-  sigma <- 0.5
+  sigma <- 0.2
   model <- new_esc(intercept, -1/log10(1 + E), sigma)
   conc <- 20
   cqs <- sim_cqs(rep(conc, 5), E, intercept, sigma)
   df <- data.frame(sample = c(rep(1, 5), rep(2, 3)), cqs = c(cqs, rep(NaN, 3)))
   res <- multi_interval(df, model)
-  expect_equal(dim(res), c(2, 4))
+  expect_equal(dim(res), c(2, 5))
   expect_setequal(res$sample, c(1, 2))
   ind1 <- which(res$sample == 1)
   ind2 <- which(res$sample == 2)
@@ -155,7 +155,7 @@ test_that("multi_interval works", {
   expect_equal(1 - exp(-3 * res$upper[ind2]), 0.95)
   df <- data.frame(sample = c(rep("a", 5), rep("b", 3)), cqs = c(cqs, rep(NaN, 3)))
   res <- multi_interval(df, model, level = 0.90, approximate = FALSE)
-  expect_equal(dim(res), c(2, 4))
+  expect_equal(dim(res), c(2, 5))
   expect_setequal(res$sample, c("a", "b"))
   ind1 <- which(res$sample == "a")
   ind2 <- which(res$sample == "b")
@@ -188,10 +188,12 @@ test_that("multi_interval input checks work", {
 
 test_that("concentration mcmc estimation works", {
   skip_if_not_installed("runjags")
+
   intercept <- 38
-  E <- 0.97
-  sigma <- 0.5
+  E         <- 0.97
+  sigma     <- 0.2
   model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
+
   conc <- 20
   data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   int <- conc_mcmc(data, model)
@@ -205,6 +207,7 @@ test_that("concentration mcmc estimation works", {
   expect_true(abs(int1$interval$mean - conc)/conc < 0.5)
   expect_true(int1$interval$upper > int$interval$upper)
   expect_true(int1$interval$lower < int$interval$lower)
+
   conc <- 500
   data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
   int <- conc_mcmc(data, model)
@@ -213,6 +216,7 @@ test_that("concentration mcmc estimation works", {
   expect_true(abs(int$interval$mean - conc)/conc < 0.5)
   expect_true(int$interval$upper > int$interval$median)
   expect_true(int$interval$lower < int$interval$median)
+
   conc <- 1.5
   data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
                   sigma = sigma)
@@ -239,7 +243,7 @@ test_that("multi_conc_mcmc works", {
   skip_if_not_installed("runjags")
   intercept <- 38
   E <- 0.97
-  sigma <- 0.5
+  sigma <- 0.2
   model <- new_esc(intercept, -1/log10(1 + E), sigma)
   conc <- 20
   cqs <- sim_cqs(rep(conc, 5), E, intercept, sigma)

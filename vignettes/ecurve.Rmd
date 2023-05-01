@@ -50,7 +50,7 @@ In addition to fitting the ESC model, the `ecurve` package provides functionalit
 Moreover, the function `conc_interval()` provides a Bayesian methods to generate a credible interval to quantify the uncertainty in such a concentration estimate. 
 The `multi_interval()` function is also provided for performing concentration estimations for multiple samples at once using the same standard curve.
 
-The functions `plot_esc_data()`, `plot_esc_model()` and `plot_conc_int()` are also provided to help visualize the results of these analyses.
+The functions `plot_esc_data()`, `plot_esc_model()` and `plot_conc_post()` are also provided to help visualize the results of these analyses.
 
 ### Note on approximations performed
 
@@ -156,7 +156,7 @@ conc_mle(samp8_cqs, model = model)
 
 The function `conc_mle()` provides the "best" estimates, according to the MLE method (i.e. the parameter value that maximizes the likelihood of the data). 
 We can also quantify the uncertainty in these estimates using the `conc_interval()` function. This function uses numerical methods to compute the Bayesian posterior concentration distribution given the $C_q$ data and fitted model, assuming a uniform prior, and constructs a credible interval for the concentration. In the case of all non-detects, a one-sided credible interval is produced, while in all other cases a two-sided, equal tailed interval is used.
-The credible level of the interval can be controlled using the optional `level` parameter, which defaults to 0.95 if not specified. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval
+The credible level of the interval can be controlled using the optional `level` parameter, which defaults to 0.95 if not specified. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration and the specified level for the interval. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval
 ```{r concentration_intervals}
 samp3_int <- conc_interval(samp3_cqs, model = model)
 samp7_int <- conc_interval(samp7_cqs, model = model)
@@ -166,10 +166,10 @@ samp3_int$interval
 samp7_int$interval
 samp8_int$interval
 ```
-These intervals can also be visualized using the `plot_conc_int()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter `type`, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brevity, this is only illustrated for sample 7.
+These intervals can also be visualized using the `plot_conc_post()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter `type`, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brevity, this is only illustrated for sample 7.
 ```{r plot_concetration_pdf, fig.width=8}
-plot_conc_int(samp7_int, type = "pdf")
-plot_conc_int(samp7_int, type = "cdf")
+plot_conc_post(samp7_int, type = "pdf")
+plot_conc_post(samp7_int, type = "cdf")
 ```
 
 Finally, we illustrate the use of the `multi_interval()` function to fit concentration credible intervals for all samples in the `esc-test-data.csv` dataset simultaneously. The `test.data` dataframe is already in the format required by this function, with a `sample` column listing the sample indices and and `cqs` column listing the corresponding $C_q$ values.

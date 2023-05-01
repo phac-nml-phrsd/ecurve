@@ -4,7 +4,7 @@
 \alias{new_conc_int}
 \title{Generate New conc_int Object}
 \usage{
-new_conc_int(mle, interval, grid, pdf, cdf)
+new_conc_int(mle, interval, grid, pdf, cdf, level)
 }
 \arguments{
 \item{mle}{MLE estimate of concentration}
@@ -18,13 +18,16 @@ evaluated}
 \item{pdf}{Numeric vector of PDF values evaluated at each point in grid}
 
 \item{cdf}{Numeric vector of CDF values evaluated at each point in grid}
+
+\item{level}{Numeric. Level of the credible interval}
 }
 \value{
 Object of class conc_int
 }
 \description{
 Creates new object of class conc_int, containing a list specifying the upper
-and lower endpoints of the credible interval and the MLE concentration
-estimate, as well as a data frame containing the PDF and CDF of posterior
-concentration distribution evaluated at a grid of points
+and lower endpoints of the credible interval,the MLE concentration
+estimate, and the level of the interval, as well as a data frame containing
+the PDF and CDF of posterior concentration distribution evaluated at a grid
+of points
 }

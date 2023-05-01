@@ -111,9 +111,9 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
     conc_log_like <- conc_log_likelihood_factory(cqs, model)
   }
 
-  res = nlm(
-    f = conc_log_like,
-    p = exp((mean(cqs, na.rm = TRUE) - model$intercept) * log(10)/model$slope) )
+  res <- suppressWarnings(nlm(f = conc_log_like,
+                              p = exp((mean(cqs, na.rm = TRUE) - model$intercept)
+                                      * log(10)/model$slope)))
 
   return(res$estimate)
 }
@@ -164,7 +164,8 @@ conc_interval <- function(cqs,
     grid <- seq(from = 0, to = log(10) * 9 / n, length.out = 1001)
     return(new_conc_int(mle = 0, interval = c(0, -log(1 - level)/n), grid = grid,
                         pdf = sapply(grid, function(x) {n * exp(-x * n)}),
-                        cdf = sapply(grid, function(x) {1 - exp(-x * n)})))
+                        cdf = sapply(grid, function(x) {1 - exp(-x * n)}),
+                        level = level))
   }
 
   # --- Compute MLE
@@ -180,13 +181,14 @@ conc_interval <- function(cqs,
     conc_log_like <- conc_log_likelihood_factory(cqs, model)
   }
 
-  mle <- stats::nlm(conc_log_like,
-                    exp((mean(cqs, na.rm = TRUE) - model$intercept) *
-                          log(10)/model$slope))$estimate
+  mle <- suppressWarnings(stats::nlm(conc_log_like,
+                                     exp((mean(cqs, na.rm = TRUE) - model$intercept) *
+                                     log(10)/model$slope)))$estimate
 
   # Compute bounds for numerical integration
   threshold <- conc_log_like(mle) + 9 * log(10)
-  root_est_factor <- exp(9.21 * model$sigma / abs(model$slope))
+  root_est_factor <- exp(9.21 * model$sigma / abs(model$slope)) #empirical factor
+  #for getting reasonable estimates of roots before using uniroot. Helps improve efficiency
   lb <- stats::uniroot(function(conc) {conc_log_like(conc) - threshold}, upper = mle,
                 lower = mle / root_est_factor, extendInt = "downX")$root
   ub <- stats::uniroot(function(conc) {conc_log_like(conc) - threshold}, lower = mle,
@@ -202,7 +204,7 @@ conc_interval <- function(cqs,
   limits <- c((1 - level)/2, 1 - (1 - level)/2) * cdf[1001]
   interval <- stats::approx(x = cdf, y = grid, xout = limits, rule = 2, ties = "ordered")$y
 
-  res = new_conc_int(mle, interval, grid, pdf, cdf)
+  res = new_conc_int(mle, interval, grid, pdf, cdf, level)
 
   return(res)
 }
@@ -325,6 +327,7 @@ conc_mcmc <- function(cqs, model, level = 0.95){
                                            sigma = sigma),
                                monitor = c("conc"),
                                thin = 4,
+                               n.chains = 2,
                                inits = function() {
                                  mod_cqs <- cqs
                                  mod_cqs[which(nds)] <- intercept
@@ -412,6 +415,7 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
                                            sigma = sigma),
                                monitor = c("conc"),
                                thin = 4,
+                               n.chains = 2,
                                inits = function() {
                                  mod_cq_data <- cq_data
                                  mod_cq_data$cqs[which(nds)] <- intercept

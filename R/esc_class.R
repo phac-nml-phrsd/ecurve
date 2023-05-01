@@ -16,9 +16,38 @@
 #'
 new_esc <- function(intercept, slope, sigma, data = NULL) {
   res <- list(intercept = intercept,
-              slope = slope,
-              eff = exp(-log(10)/slope) - 1,
-              sigma = sigma,
-              data = data)
+              slope     = slope,
+              eff       = exp(-log(10)/slope) - 1,
+              sigma     = sigma,
+              data      = data)
+
+  # Check inputs
+  if(!is.numeric(intercept)) stop('`intercept` must be a number.')
+  if(!is.numeric(slope)) stop('`slope` must be a number.')
+  if(!is.numeric(sigma)) stop('`sigma` must be a number.')
+  if(intercept < 0) stop('`intercept` must be a positive number.')
+  if(sigma < 0) stop('`sigma` must be a positive number.')
+
+  # Return class object
   structure(res, class = "esc")
+}
+
+#' Create ESC Objects With Specified Parameters
+#'
+#' Creates \code{esc} object, given parameters intercept, eff, and sigma
+#'
+#' @param intercept Numeric. Intercept parameter of ESC model.
+#' @param eff Numeric. qPCR efficiency.
+#' @param sigma Numeric. Sigma parameter of ESC model.
+#'
+#' @return \code{esc} object
+#' @export
+#'
+#' @examples
+gen_esc <- function(intercept, eff, sigma) {
+  # Check input
+  # (leave `intercept` and `sigma` to the nested function `new_esc()`)
+  if(eff <= 0) stop('Efficiency `eff` must be positive.')
+
+  return(new_esc(intercept, slope = -1 / log10(1 + eff), sigma))
 }
