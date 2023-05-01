@@ -40,12 +40,22 @@ test_that("model plotting input checks work", {
 
   model2 <- model
   model2$data <- NULL
-  expect_error(
-    plot_esc_model(model2),
-    "'The ESC model object input does not contain `data`. \n',
-    'The function `plot_esc_model()` can only plot ESC object with data. Returning no plot."
-    )
-
+  g = plot_esc_model(model2)
+  expect_true(is.null(g))
 
 })
 
+test_that("plot_esc_model() returns a ggplot object",{
+
+  concs <- 2^rep(seq(from = -2, to = 10), each = 3)
+  cq1   <- 38
+  sigma <- 0.5
+  eff   <- 0.97
+  cqs   <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
+  df <- data.frame(concentrations = concs, cqs = cqs)
+
+  model <- esc_mle(df)
+
+  g = plot_esc_model(model)
+  expect_true(inherits(g, 'gg'))
+})

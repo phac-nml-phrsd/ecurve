@@ -155,8 +155,7 @@ plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",
   if(!inherits(model, 'esc')) {stop("model is not an esc object")}
 
   if(is.null(model$data)){
-    message('The ESC model object input does not contain `data`. \n',
-    'The function `plot_esc_model()` can only plot ESC object with data. Returning no plot.')
+    message('The ESC model object input does not contain `data`. The function `plot_esc_model()` can only plot ESC object with data. Returning no plot.')
    return(NULL)
   }
 
