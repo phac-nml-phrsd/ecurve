@@ -41,9 +41,6 @@ plot_esc_data <- function(esc_data, xlimits = NULL) {
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(length(concentrations) != length(cqs)) {
-    stop("concentrations and cqs must be the same length")
-  }
 
   # --- Generate plot
 
@@ -158,8 +155,7 @@ plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",
   if(!inherits(model, 'esc')) {stop("model is not an esc object")}
 
   if(is.null(model$data)){
-    message('The ESC model object input does not contain `data`. \n',
-    'The function `plot_esc_model()` can only plot ESC object with data. Returning no plot.')
+    message('The ESC model object input does not contain `data`. The function `plot_esc_model()` can only plot ESC object with data. Returning no plot.')
    return(NULL)
   }
 

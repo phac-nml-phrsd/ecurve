@@ -27,4 +27,15 @@ test_that("gen_esc() works", {
     gen_esc(intercept, eff, sigma = -1),
     "`sigma` must be a positive number."
   )
+
+  expect_error(
+    gen_esc(intercept = "A", eff, sigma),
+    "`intercept` must be a number."
+  )
+
+  expect_error(
+    gen_esc(intercept, eff, sigma = "A"),
+    "`sigma` must be a number."
+  )
+
 })
