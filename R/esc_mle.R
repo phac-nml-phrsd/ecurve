@@ -105,19 +105,30 @@ esc_log_likelihood <- function(params,
                                approximate = TRUE) {
 
   if(params[3] < 0) {return(Inf)}
+
+  # Parameterization to constraint
+  # the Efficiency between 0 and 1:
+  slope = slope_from_theta(theta = params[2]) / log(10)
+
+
   if (approximate) {
-    res <- sum(mapply(log_likelihood_est,
-                      conc = concentrations,
-                      cqs = cqs,
-                      MoreArgs = list(intercept = params[1],
-                                      slope = params[2],
-                                      sigma = params[3])))
+    res <- sum( mapply(
+      FUN      = log_likelihood_est,
+      conc     = concentrations,
+      cqs      = cqs,
+      MoreArgs = list(intercept = params[1],
+                      slope     = slope,
+                      sigma     = params[3])
+      ))
   }
   else {
-    tmp <- esc_probdens(concentrations, cqs,
-                        intercept = params[1],
-                        slope = params[2],
-                        sigma = params[3])
+    tmp <- esc_probdens(
+      concentrations = concentrations,
+      cqs            = cqs,
+      intercept      = params[1],
+      slope          = slope,
+      sigma          = params[3])
+
     res <- -sum(log(tmp))
   }
   return(res)
@@ -223,39 +234,44 @@ esc_mle <- function(esc_data,
 
   # --- ESC model fitting
 
-  init <- c(unname(coef(naive_sc)), sigma(naive_sc))
+  # Note:
+  # coef[1] = intercept
+  # coef[2] = slope
+  k = coef(naive_sc)
 
-  res <- suppressWarnings(nlm(f = esc_log_likelihood,
-                              p = init,
-                              concentrations = concentrations,
-                              cqs = cqs,
-                              approximate = approximate))
+  # Parameterization to constraint
+  # the Efficiency between 0 and 1:
+  theta.init = theta_from_slope(min(-1.1/log10(2), k[2]))
 
-  #if slope does not exceed -1/log(2), meaning efficiency does not exceed 1,
-  #create esc object using results as is
-  if(res$estimate[2] <= -1/log(2)) {
-    m <- new_esc(intercept = res$estimate[1],
-                slope = res$estimate[2] * log(10),
-                sigma = res$estimate[3],
-                data = data.frame(concentrations = concentrations,
-                                  cqs = cqs))
-  }
-  #otherwise, force slope to be -1/log(2) and re-optimize before creating esc object
-  else {
-    res <- suppressWarnings(nlm(f = function(params){
-                                    esc_log_likelihood(c(params[1], -1/log(2), params[2]),
-                                                       concentrations = concentrations,
-                                                       cqs = cqs,
-                                                       approximate = approximate)},
-                                p = c(res$estimate[1], res$estimate[3]))
+  # initial guess for optimization
+  # Note that: init = c(intercept, theta, sigma)
+  init <- c(k[1],
+            theta.init,
+            sigma(naive_sc))
 
+  res <- suppressWarnings(
+    nlm(
+      f              = esc_log_likelihood,
+      p              = init,
+      concentrations = concentrations,
+      cqs            = cqs,
+      approximate    = approximate
     )
-    m <- new_esc(intercept = res$estimate[1],
-                slope = -1/log10(2),
-                sigma = res$estimate[2],
-                data = data.frame(concentrations = concentrations,
-                                  cqs = cqs))
-  }
+  )
+
+  # Extract the optimal slope from the optimal theta
+  # (theta is used in the optimization to constraint
+  # the implied Efficiency between 0 and 1)
+
+  slope = slope_from_theta(res$estimate[2])
+
+  m <- new_esc(
+    intercept = res$estimate[1],
+    slope     = slope,
+    sigma     = res$estimate[3],
+    data      = data.frame(concentrations = concentrations,
+                           cqs = cqs))
+
   return(m)
 }
 
@@ -354,3 +370,4 @@ esc_mcmc <- function(esc_data, level = 0.95) {
               eff = extract_int("eff"), sigma = extract_int("sigma"),
               mcmc_samples = results))
 }
+
