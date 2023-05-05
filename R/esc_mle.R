@@ -211,7 +211,11 @@ check_input_esc_mle <- function(esc_data, approximate, assumeND) {
 #'
 #' @export
 #'
-#' @example
+#' @examples
+#' esc_data = data.frame(
+#'      concentrations = c(1,1,10, 10, 100, 500, 500),
+#'      cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#' mod = esc_mle(esc_data)
 #'
 esc_mle <- function(esc_data,
                     approximate = TRUE,

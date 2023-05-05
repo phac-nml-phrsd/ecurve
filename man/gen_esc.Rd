@@ -19,3 +19,9 @@ gen_esc(intercept, eff, sigma)
 \description{
 Creates \code{esc} object, given parameters intercept, eff, and sigma
 }
+\examples{
+
+m = gen_esc(intercept = 39, eff = 0.98, sigma = 0.2)
+print_esc_model(m)
+
+}

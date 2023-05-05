@@ -88,6 +88,15 @@ conc_log_likelihood_factory <- function(cqs, model) {
 #'
 #' @examples
 #'
+#' esc_data = data.frame(
+#'      concentrations = c(1,1,10, 10, 100, 500, 500),
+#'      cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#'  mod = esc_mle(esc_data)
+#'
+#'  new.cqs = c( 35, NaN, 36)
+#'  x = conc_mle(cqs = new.cqs, model = mod)
+#'  print(x)
+#'
 conc_mle <- function(cqs, model, approximate = TRUE) {
 
   # --- Input checks
@@ -142,6 +151,15 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
 #' @export
 #'
 #' @examples
+#'
+#'  esc_data = data.frame(
+#'      concentrations = c(1,1,10, 10, 100, 500, 500),
+#'      cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#'  mod = esc_mle(esc_data)
+#'
+#'  new.cqs = c( 35, NaN, 36)
+#'  x = conc_interval(cqs = new.cqs, model = mod)
+#'  print(x$interval)
 #'
 conc_interval <- function(cqs,
                           model,
