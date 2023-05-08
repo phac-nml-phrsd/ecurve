@@ -16,7 +16,10 @@
 #' @export
 #'
 #' @examples
-#'
+#' esc_data = data.frame(
+#'     concentrations = c(1,1,10, 10, 100, 500, 500),
+#'     cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#' plot_esc_data(esc_data)
 #'
 plot_esc_data <- function(esc_data, xlimits = NULL) {
 
@@ -146,6 +149,11 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 #' @export
 #'
 #' @examples
+#' esc_data = data.frame(
+#'     concentrations = c(1,1,10, 10, 100, 500, 500),
+#'     cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#' mod = esc_mle(esc_data)
+#' plot_esc_model(mod)
 #'
 #'
 plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",

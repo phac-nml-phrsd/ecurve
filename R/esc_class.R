@@ -12,8 +12,6 @@
 #'
 #' @return Object of class \code{esc}.
 #'
-#' @examples
-#'
 new_esc <- function(intercept, slope, sigma, data = NULL) {
   res <- list(intercept = intercept,
               slope     = slope,
@@ -44,6 +42,10 @@ new_esc <- function(intercept, slope, sigma, data = NULL) {
 #' @export
 #'
 #' @examples
+#'
+#' m = gen_esc(intercept = 39, eff = 0.98, sigma = 0.2)
+#' print_esc_model(m)
+#'
 gen_esc <- function(intercept, eff, sigma) {
   # Check input
   # (leave `intercept` and `sigma` to the nested function `new_esc()`)

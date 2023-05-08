@@ -30,3 +30,15 @@ Given list of Cq values from a set of technical replicates
 and a fitted ESC model, generates credible interval of desired level
 through numerical integration of the posterior distribution.
 }
+\examples{
+
+ esc_data = data.frame(
+     concentrations = c(1,1,10, 10, 100, 500, 500),
+     cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+ mod = esc_mle(esc_data)
+
+ new.cqs = c( 35, NaN, 36)
+ x = conc_interval(cqs = new.cqs, model = mod)
+ print(x$interval)
+
+}

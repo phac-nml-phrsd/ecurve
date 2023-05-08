@@ -23,3 +23,10 @@ Given a data frame containing concentrations
 and corresponding Cq values, plots Cq values against
 log-transformed concentrations.
 }
+\examples{
+esc_data = data.frame(
+    concentrations = c(1,1,10, 10, 100, 500, 500),
+    cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+plot_esc_data(esc_data)
+
+}
