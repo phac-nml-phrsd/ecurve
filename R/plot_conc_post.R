@@ -16,6 +16,8 @@
 #'
 #' @export
 #'
+#' @importFrom rlang .data
+#'
 #' @examples
 #'
 #'
@@ -23,41 +25,58 @@ plot_conc_post <- function(interval, type, title =
                             paste("Concentration Posterior", toupper(type))) {
 
   # Input checks
+
   if(!inherits(interval, 'conc_int')) {stop("interval is not a conc_int object")}
   if(type != "pdf" & type != "cdf") {stop("invalid type ", type, " specified")}
   if(!is.character(title) | !length(title) == 1) {stop("title must be a string")}
 
-  #Compute positions of interval markers
+  # Compute positions of interval markers
+
   xvals <- unlist(interval$interval)[1:3]
   grid <- interval$distribution$concentration
   coords <- findInterval(xvals, grid)
-  fun <- if(type == "pdf") {interval$distribution$pdf} else {interval$distribution$cdf}
+  fun <- if(type == "pdf") {
+    interval$distribution$pdf}
+  else {
+    interval$distribution$cdf}
+
   yvals <- (fun[coords] * (grid[coords + 1] - xvals) +
               fun[coords + 1] * (xvals - grid[coords])) / (grid[coords + 1] -
                                                              grid[coords])
+
   mle_label <- paste0("MLE: ", signif(interval$interval$mle, 3), "gc/rxn")
+
   interval_label <- paste0(round(interval$interval$level * 100), "% CI: ",
                            signif(interval$interval$lower, 3), " - ",
                            signif(interval$interval$upper, 3), "gc/rxn")
+
   point_df <- data.frame(x = xvals,
                          y = yvals,
-                         Legend = c(interval_label, mle_label, interval_label))
+                         Legend = c(interval_label,
+                                    mle_label,
+                                    interval_label))
 
   # Generate plot
+
   if(type == "pdf") {
-    fun_mapping <- ggplot2::aes(x = concentration, y = pdf)
+    fun_mapping <- ggplot2::aes(x = .data$concentration, y = .data$pdf)
     label <- ggplot2::labs(x = "Concentration (gc/rxn)",
                            y = "Probability Density")
   }
   else {
-    fun_mapping <- ggplot2::aes(x = concentration, y = cdf)
+    fun_mapping <- ggplot2::aes(x = .data$concentration, y = .data$cdf)
     label <- ggplot2::labs(x = "Concentration (gc/rxn)",
                            y = "Cumulative Probability")
   }
-  plot <- ggplot2::ggplot(interval$distribution, fun_mapping) + label +
+  plot <- ggplot2::ggplot(interval$distribution, fun_mapping) +
+    label +
     ggplot2::geom_line() +
-    ggplot2::geom_segment(data = point_df,
-                          mapping = ggplot2::aes(x = x, y = 0, xend = x,
-                                                 yend = y, color = Legend))
- return(plot)
+    ggplot2::geom_segment(
+      data = point_df,
+      mapping = ggplot2::aes(x     = .data$x,
+                             y     = 0,
+                             xend  = .data$x,
+                             yend  = .data$y,
+                             color = .data$Legend))
+  return(plot)
 }

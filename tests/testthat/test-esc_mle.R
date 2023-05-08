@@ -53,7 +53,7 @@ test_that("esc mcmc estimation works", {
   eff <- 0.97
   cqs <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
   df <- data.frame(concentrations = concs, cqs = cqs)
-  res <- esc_mcmc(df)
+  res <- esc_mcmc(esc_data = df)
   expect_s3_class(res$mcmc_samples, "runjags")
   expect_true(abs(res$intercept$median - cq1)/cq1 < 0.1)
   expect_true(abs(res$intercept$mean - cq1)/cq1 < 0.1)

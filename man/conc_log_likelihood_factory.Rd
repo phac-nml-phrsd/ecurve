@@ -13,7 +13,7 @@ conc_log_likelihood_factory(cqs, model)
 }
 \value{
 Function that takes single input concentration and returns negative of
-corresponding log likelihhod
+corresponding log likelihood
 }
 \description{
 Given ESC Model parameters and observed Cq data, returns function implementing

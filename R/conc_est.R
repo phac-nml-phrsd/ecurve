@@ -7,7 +7,7 @@
 #' @param model `esc` object representing fitted model to use for estimation.
 #'
 #' @return Function that takes single input concentration and returns negative of
-#' corresponding log likelihhod
+#' corresponding log likelihood
 conc_log_likelihood_factory <- function(cqs, model) {
 
   # --- unpack
@@ -25,7 +25,7 @@ conc_log_likelihood_factory <- function(cqs, model) {
 
   #function for generating normal densities
   gen_norm_densities <- function(N0) {
-    dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
+    stats::dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   }
 
   #stored normal densities, for reuse between calls of generated function
@@ -37,8 +37,9 @@ conc_log_likelihood_factory <- function(cqs, model) {
     if(concentration < 0) {return(Inf)}
 
     #calculate bounds on N0 for summation
-    N0start <- max(qpois(1e-15, concentration), 1)
-    N0end   <- max(qpois(1e-15, concentration, lower.tail = FALSE), N0start + 1)
+    N0start <- max(stats::qpois(1e-15, concentration), 1)
+    N0end   <- max(stats::qpois(1e-15, concentration, lower.tail = FALSE),
+                   N0start + 1)
 
     #calculate and store new normal densities if required, and update bounds
     if (N0start < N0min) {
@@ -58,14 +59,12 @@ conc_log_likelihood_factory <- function(cqs, model) {
 
     # --- Likelihood components
     lk.norm = norm_densities[,N0s - N0min + 1]
-    lk.pois = dpois(N0s, concentration)
+    lk.pois = stats::dpois(N0s, concentration)
     cond.detect = num_non_detects * concentration
 
     # --- Final likelihood
     res = sum(-log(lk.norm %*% lk.pois), cond.detect)
     return(res)
-    # prod(norm_densities[,N0s - N0min + 1] %*% dpois(N0s, concentration),
-    #      exp(-num_non_detects * concentration))
   }
 }
 
@@ -120,9 +119,10 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
     conc_log_like <- conc_log_likelihood_factory(cqs, model)
   }
 
-  res <- suppressWarnings(nlm(f = conc_log_like,
-                              p = exp((mean(cqs, na.rm = TRUE) - model$intercept)
-                                      * log(10)/model$slope)))
+  res <- suppressWarnings(stats::nlm(
+    f = conc_log_like,
+    p = exp((mean(cqs, na.rm = TRUE) - model$intercept)* log(10)/model$slope))
+    )
 
   return(res$estimate)
 }
@@ -274,7 +274,7 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   if(!is.logical(approximate)) {stop("approximate must be logical")}
 
   #compute intervals
-  res <- aggregate(cqs ~ sample,
+  res <- stats::aggregate(cqs ~ sample,
                    data = cq_data,
                    na.action = NULL,
                    FUN =
@@ -322,7 +322,7 @@ conc_mcmc <- function(cqs, model, level = 0.95){
   if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
@@ -354,8 +354,8 @@ conc_mcmc <- function(cqs, model, level = 0.95){
 
   #check effective sample size
   if(results$summaries[1,9] < 100) {
-    warning(paset0("Low effective sample size (less than 100). Results may be",
-            "unreliable - consider using numerical integration instead."))
+    warning("Low effective sample size (less than 100). Results may be
+            unreliable - consider using numerical integration instead.")
   }
 
   #process and return results
@@ -409,7 +409,7 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
   if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
     stop("cqs must be non-negative real numbers or NaN")
   }
-  if(class(model) != "esc") {stop("model is not an esc object")}
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
   if(!is.numeric(level)) {stop("level must be numeric")}
   if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
 
@@ -418,30 +418,35 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
   slope <- model$slope / log(10)
   sigma <- model$sigma
 
-  #pre-process inputs
+  # pre-process inputs
   nds <- is.nan(cq_data$cqs)
   cq_data$cqs[which(nds)] <- NA
   samples <- unique(cq_data$sample)
 
-  #run mcmc sampling with jags
-  results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
-                                           package = "ecurve"),
-                               data = list(n = dim(cq_data)[1], cq = cq_data$cqs,
-                                           ND = as.numeric(nds), k = length(samples),
-                                           index = match(cq_data$sample, samples),
-                                           alpha = intercept, beta = slope,
-                                           sigma = sigma),
-                               monitor = c("conc"),
-                               thin = 4,
-                               n.chains = 2,
-                               inits = function() {
-                                 mod_cq_data <- cq_data
-                                 mod_cq_data$cqs[which(nds)] <- intercept
-                                 mean_cqs <- aggregate(cqs ~ sample,
-                                                       data = mod_cq_data,
-                                                       FUN = mean)$cqs
-                                 list(conc = exp((mean_cqs - intercept)/slope))
-                               })
+  # run MCMC sampling with jags
+  results <- runjags::run.jags(
+    model = system.file("jags-models", "conc-model.txt", package = "ecurve"),
+    #
+    data = list(n     = dim(cq_data)[1],
+                cq    = cq_data$cqs,
+                ND    = as.numeric(nds),
+                k     = length(samples),
+                index = match(cq_data$sample, samples),
+                alpha = intercept,
+                beta  = slope,
+                sigma = sigma),
+    #
+    monitor = c("conc"),
+    thin = 4,
+    n.chains = 2,
+    inits = function() {
+      mod_cq_data <- cq_data
+      mod_cq_data$cqs[which(nds)] <- intercept
+      mean_cqs <- stats::aggregate(cqs ~ sample,
+                                   data = mod_cq_data,
+                                   FUN = mean)$cqs
+      list(conc = exp((mean_cqs - intercept)/slope))
+    })
 
   #check effective sample sizes
   if(any(results$summaries[,9] < 100)) {

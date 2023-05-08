@@ -37,9 +37,3 @@ theta_from_slope <- function(slope) {
 }
 
 
-foo <- function() {
-  x = seq(-2,5, by=0.1)
-  ys = sapply(x, slope_from_theta)
-  check = sapply(ys, theta_from_slope)
-  plot(x, y=check) ; abline(a=0,b=1)
-  }

@@ -73,26 +73,33 @@ plot_esc_data <- function(esc_data, xlimits = NULL) {
 #' @param sigma sigma parameter of ESC model
 #'
 #' @return Numeric vector containing the calculated quantiles
+#'
+#' @importFrom stats pnorm dpois qnorm uniroot
+#'
 cq_quantile <- function(alpha,
                         concentrations,
                         intercept,
                         slope,
                         sigma) {
-  N0mins <- pmax(qpois(1E-15, concentrations), 1)
-  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
-  N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
-  means <- intercept + slope * log(N0s)
+  N0mins   <- pmax(stats::qpois(1E-15, concentrations), 1)
+  N0maxes  <- pmax(stats::qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
+  N0s      <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
+  means    <- intercept + slope * log(N0s)
   N0starts <- match(N0mins, N0s)
-  N0ends <- match(N0maxes, N0s)
+  N0ends   <- match(N0maxes, N0s)
 
   quant <- function(conc, N0start, N0end) {
-    stats::uniroot(function(cq) {
-      sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
-            dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
+    uniroot(
+      f = function(cq) {
+        sum(pnorm(cq, mean = means[N0start:N0end], sd = sigma) *
+              dpois(N0s[N0start:N0end], conc)) - alpha * (1 - exp(-conc))},
       lower = qnorm(alpha, mean = means[N0end], sd = sigma),
       upper = qnorm(alpha, mean = means[N0start], sd = sigma))$root
   }
-  res = mapply(quant, conc = concentrations, N0start = N0starts, N0end = N0ends)
+  res = mapply(FUN = quant,
+               conc = concentrations,
+               N0start = N0starts,
+               N0end = N0ends)
   return(res)
 }
 
@@ -116,8 +123,8 @@ cq_quantile <- function(alpha,
 #' @return estimate of specified quantile
 cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
   #determine N0 values at which to perform evaluation
-  N0start <- max(qpois(1e-15, conc), 1)
-  N0end <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
+  N0start <- max(stats::qpois(1e-15, conc), 1)
+  N0end <- max(stats::qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
   granularity <- ceiling((N0end - N0start)/100)
   N0s <- seq(N0start, N0end, by = granularity)
 
@@ -147,6 +154,8 @@ cq_quantile_est <- function(alpha, conc, intercept, slope, sigma) {
 #'
 #' @return A \code{ggplot} object representing plot.
 #' @export
+#'
+#' @importFrom rlang .data
 #'
 #' @examples
 #' esc_data = data.frame(
@@ -202,18 +211,24 @@ plot_esc_model <- function(model, PI = 0.95, title = "ESC model fit",
 
   names(cq_quants) <- c('low', 'median', 'high')
   cq_quants <- as.data.frame(cq_quants)
+  cq_quants$concentrations = concentrations
+
 
   # --- Generate plot
   g.data = plot_esc_data(model$data, xlimits)
 
   g.model = g.data +
-    ggplot2::geom_line(data = cq_quants, ggplot2::aes(x = concentrations,
-                                                      y = median),
-                       color=col.med, linewidth = size.med)+
-    ggplot2::geom_ribbon(data = cq_quants, ggplot2::aes(x = concentrations,
-                                                        ymin = low, ymax = high,
-                                                        y = median),
-                         alpha = alpha.ci, fill = col.ci)+
+    ggplot2::geom_line(data = cq_quants,
+                       mapping = ggplot2::aes(x = .data$concentrations,
+                                              y = .data$median),
+                       color = col.med,
+                       linewidth = size.med)+
+    ggplot2::geom_ribbon(data = cq_quants,
+                         ggplot2::aes(x    = .data$concentrations,
+                                      ymin = .data$low,
+                                      ymax = .data$high,
+                                      y    = .data$median),
+                         alpha = alpha.ci, fill = col.ci) +
     ggplot2::labs(title = title,
                   subtitle = paste0('Median and ',
                                     round(PI*100),'%PI'))
