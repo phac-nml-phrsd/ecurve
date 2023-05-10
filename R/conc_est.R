@@ -288,6 +288,79 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
   return(res)
 }
 
+#' Check parameters for \code{conc_mcmc()}
+#'
+#' @param cqs Numeric vector of Cq values from sample replicates, non-detects
+#' coded as NaN
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credible level.
+#'
+#' @return Nothing.
+#'
+checks_mcmc <- function(cqs, model, level) {
+
+  # --- Software checks
+
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
+
+  # --- Input checks
+
+  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+}
+
+
+#' Check parameters for \code{multi_conc_mcmc()}
+#'
+#' @param cq_data data frame with an sample column specifying the names of the
+#' samples from which reactions were generated, and a cqs column containing the
+#' corresponding Cq values. Cq values must be numeric, with non0detects encoded
+#' as NaN.
+#' @param model esc object representing fitted model to use for estimation
+#' @param level Desired credible level.
+#'
+#' @return Nothing.
+#'
+checks_mcmc_multi <- function(cq_data, model, level) {
+
+  #software checks
+  if(!requireNamespace("runjags", quietly = TRUE)) {
+    stop("package 'runjags' must be installed to use mcmc functions")
+  }
+  test <- runjags::testjags(silent = TRUE)
+  if(!test$JAGS.found) {
+    stop("JAGS software must be installed to use mcmc functions")
+  }
+
+  #input checks
+  if(!"sample" %in% names(cq_data)) {
+    stop("cq_data must contain sample column")
+  }
+  if(!"cqs" %in% names(cq_data)) {
+    stop("cq_data must contain cqs column")
+  }
+  if(!all(is.numeric(cq_data$cqs))) {stop("cqs must be numeric")}
+  if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
+    stop("cqs must be non-negative real numbers or NaN")
+  }
+  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
+  if(!is.numeric(level)) {stop("level must be numeric")}
+  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+}
+
+
+
 #' MCMC Estimation of Concentrations Using ESC Model
 #'
 #' Given list of Cq values from a set of technical replicates and fitted ESC
@@ -307,50 +380,43 @@ multi_interval <- function(cq_data, model, level = 0.95, approximate = TRUE) {
 #' @export
 #'
 #' @examples
+#'
+#'
 conc_mcmc <- function(cqs, model, level = 0.95){
-  #software checks
-  if(!requireNamespace("runjags", quietly = TRUE)) {
-    stop("package 'runjags' must be installed to use mcmc functions")
-  }
-  test <- runjags::testjags(silent = TRUE)
-  if(!test$JAGS.found) {
-    stop("JAGS software must be installed to use mcmc functions")
-  }
 
-  # --- Input checks
-  if(!all(is.numeric(cqs))) {stop("cqs must be numeric")}
-  if(!all(is.nan(cqs) | (cqs >= 0 & is.finite(cqs)))) {
-    stop("cqs must be non-negative real numbers or NaN")
-  }
-  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
-  if(!is.numeric(level)) {stop("level must be numeric")}
-  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+  checks_mcmc(cqs, model, level)
 
-  #unpack model
+  # unpack model
   intercept <- model$intercept
   slope <- model$slope / log(10)
   sigma <- model$sigma
 
-  #pre-process inputs
-  n <- length(cqs)
+  # pre-process inputs
+  n   <- length(cqs)
   nds <- is.nan(cqs)
   cqs[which(nds)] <- NA
 
-  #run mcmc sampling with jags
-  results <- runjags::run.jags(system.file("jags-models", "conc-model.txt",
-                                           package = "ecurve"),
-                               data = list(n = n, cq = cqs, ND = as.numeric(nds),
-                                           k = 1, index = rep(1, n),
-                                           alpha = intercept, beta = slope,
-                                           sigma = sigma),
-                               monitor = c("conc"),
-                               thin = 4,
-                               n.chains = 2,
-                               inits = function() {
-                                 mod_cqs <- cqs
-                                 mod_cqs[which(nds)] <- intercept
-                                 list(conc = exp((mean(mod_cqs) - intercept)/slope))
-                               })
+  data.jags = list(n = n,
+                   Cq = cqs,
+                   ND = as.numeric(nds),
+                   k = 1,
+                   index = rep(1, n),
+                   alpha = intercept,
+                   beta = slope,
+                   sigma = sigma)
+
+  # run MCMC sampling with JAGS
+  results <- runjags::run.jags(
+    model = system.file("jags-models", "conc-model.txt", package = "ecurve"),
+    data = data.jags,
+    monitor = c("conc"),
+    thin = 4,
+    n.chains = 2,
+    inits = function() {
+      mod_cqs <- cqs
+      mod_cqs[which(nds)] <- intercept
+      list(conc = exp((mean(mod_cqs) - intercept)/slope))
+    })
 
   #check effective sample size
   if(results$summaries[1,9] < 100) {
@@ -389,31 +455,10 @@ conc_mcmc <- function(cqs, model, level = 0.95){
 #'
 #' @examples
 multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
-  #software checks
-  if(!requireNamespace("runjags", quietly = TRUE)) {
-    stop("package 'runjags' must be installed to use mcmc functions")
-  }
-  test <- runjags::testjags(silent = TRUE)
-  if(!test$JAGS.found) {
-    stop("JAGS software must be installed to use mcmc functions")
-  }
 
-  #input checks
-  if(!"sample" %in% names(cq_data)) {
-    stop("cq_data must contain sample column")
-  }
-  if(!"cqs" %in% names(cq_data)) {
-    stop("cq_data must contain cqs column")
-  }
-  if(!all(is.numeric(cq_data$cqs))) {stop("cqs must be numeric")}
-  if(!all(is.nan(cq_data$cqs) | (cq_data$cqs >= 0 & is.finite(cq_data$cqs)))) {
-    stop("cqs must be non-negative real numbers or NaN")
-  }
-  if(!inherits(model, 'esc')) {stop("model is not an esc object")}
-  if(!is.numeric(level)) {stop("level must be numeric")}
-  if(level > 1 | level < 0) {stop("level must be between 0 and 1")}
+  checks_mcmc_multi(cq_data = cq_data, model = model, level = level)
 
-  #unpack model
+  # unpack model
   intercept <- model$intercept
   slope <- model$slope / log(10)
   sigma <- model$sigma
@@ -423,19 +468,19 @@ multi_conc_mcmc <- function(cq_data, model, level = 0.95) {
   cq_data$cqs[which(nds)] <- NA
   samples <- unique(cq_data$sample)
 
+  data.jags = list(n     = dim(cq_data)[1],
+                   Cq    = cq_data$cqs,
+                   ND    = as.numeric(nds),
+                   k     = length(samples),
+                   index = match(cq_data$sample, samples),
+                   alpha = intercept,
+                   beta  = slope,
+                   sigma = sigma)
+
   # run MCMC sampling with jags
   results <- runjags::run.jags(
     model = system.file("jags-models", "conc-model.txt", package = "ecurve"),
-    #
-    data = list(n     = dim(cq_data)[1],
-                cq    = cq_data$cqs,
-                ND    = as.numeric(nds),
-                k     = length(samples),
-                index = match(cq_data$sample, samples),
-                alpha = intercept,
-                beta  = slope,
-                sigma = sigma),
-    #
+    data = data.jags,
     monitor = c("conc"),
     thin = 4,
     n.chains = 2,
