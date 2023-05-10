@@ -8,10 +8,11 @@
 #' @param cq1 Cq value for initial copy number of 1
 #' @param sigma Standard Deviation of Gaussian error in Cq values
 #'
-#' @return Numeric vector of Cq Values
+#' @return Numeric vector of Cq Values.
 #' @export
 #'
 #' @examples
+#' sim_cqs(concentrations = c(1,10,100,1000), eff = 0.97, cq1 = 40, sigma = 0.2)
 #'
 sim_cqs <- function(concentrations, eff, cq1, sigma){
 
@@ -34,10 +35,10 @@ sim_cqs <- function(concentrations, eff, cq1, sigma){
 
   # --- Simulate Cq values
 
-  N0s <- rpois(length(concentrations), concentrations)
+  N0s <- stats::rpois(length(concentrations), concentrations)
   detects <- which(N0s > 0)
   cqs <- rep(NaN, length(N0s))
-  cqs[detects] <- rnorm(length(detects),
+  cqs[detects] <- stats::rnorm(length(detects),
                         mean = cq1 - log(N0s[detects])/log(1 + eff),
                         sd = sigma)
   return(cqs)

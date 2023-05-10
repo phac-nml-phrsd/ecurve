@@ -27,3 +27,10 @@ Fit the parameters of an ESC model to qPCR standard curve data. The ESC model is
 described in
 \href{https://doi.org/10.3389/fmicb.2023.1048661}{Schmidt et al. 2022}.
 }
+\examples{
+esc_data = data.frame(
+     concentrations = c(1,1,10, 10, 100, 500, 500),
+     cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+mod = esc_mle(esc_data)
+
+}

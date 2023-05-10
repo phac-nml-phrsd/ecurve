@@ -1,6 +1,6 @@
 Package: ecurve
 Title: Enhanced Standard Curve Model
-Version: 0.4.0
+Version: 0.5.0
 Authors@R: c(
     person("Liam", "Kusalik", , "ltfkusaik@uwaterloo.ca", 
            role = c("aut", "cre")),
@@ -20,5 +20,7 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Imports: 
-    ggplot2
+    ggplot2,
+    rlang,
+    stats
 VignetteBuilder: knitr

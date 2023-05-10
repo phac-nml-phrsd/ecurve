@@ -25,14 +25,14 @@ log_likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
   cqs <- cqs[detects]
 
   # Determine N0 values at which to perform evaluation
-  N0start <- max(qpois(1e-15, conc), 1)
-  N0end   <- max(qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
+  N0start <- max(stats::qpois(1e-15, conc), 1)
+  N0end   <- max(stats::qpois(1e-15, conc, lower.tail = FALSE), N0start + 1)
   granularity <- ceiling((N0end - N0start)/100)
   N0s <- seq(N0start, N0end, by = granularity)
 
   # Calculate intermediate results
   norm_dens <- sapply(N0s, function(N0){
-    dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
+    stats::dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
   })
   pois_dens <- dpois(N0s, conc)
 
@@ -62,8 +62,8 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
   # DC: we may want to merge `intercept`, `slope` and `sigma`
   # in one single _named_ vector `params`
 
-  N0mins <- pmax(qpois(1E-15, concentrations), 1)
-  N0maxes <- pmax(qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
+  N0mins <- pmax(stats::qpois(1E-15, concentrations), 1)
+  N0maxes <- pmax(stats::qpois(1E-15, concentrations, lower.tail = FALSE), N0mins)
   N0s <- unique(unlist(mapply(FUN = seq, sort(N0mins), sort(N0maxes))))
   mean_cqs <- intercept + slope * log(N0s)
   N0starts <- match(N0mins, N0s)
@@ -71,12 +71,12 @@ esc_probdens <- function(concentrations, cqs, intercept, slope, sigma) {
 
   probdens <- function(conc, cq, N0start, N0end) {
 
-    tmp1 <- dpois(x      = N0s[N0start:N0end],
-                 lambda = conc)
+    tmp1 <- stats::dpois(x      = N0s[N0start:N0end], lambda = conc)
 
-    tmp2 <- dnorm(x    = cq,
-                 mean = mean_cqs[N0start:N0end],
-                 sd   = sigma)
+    tmp2 <- stats::dnorm(
+      x    = cq,
+      mean = mean_cqs[N0start:N0end],
+      sd   = sigma)
 
     return( sum( tmp1 * tmp2 ) )
   }
@@ -105,19 +105,30 @@ esc_log_likelihood <- function(params,
                                approximate = TRUE) {
 
   if(params[3] < 0) {return(Inf)}
+
+  # Parameterization to constraint
+  # the Efficiency between 0 and 1:
+  slope = slope_from_theta(theta = params[2]) / log(10)
+
+
   if (approximate) {
-    res <- sum(mapply(log_likelihood_est,
-                      conc = concentrations,
-                      cqs = cqs,
-                      MoreArgs = list(intercept = params[1],
-                                      slope = params[2],
-                                      sigma = params[3])))
+    res <- sum( mapply(
+      FUN      = log_likelihood_est,
+      conc     = concentrations,
+      cqs      = cqs,
+      MoreArgs = list(intercept = params[1],
+                      slope     = slope,
+                      sigma     = params[3])
+      ))
   }
   else {
-    tmp <- esc_probdens(concentrations, cqs,
-                        intercept = params[1],
-                        slope = params[2],
-                        sigma = params[3])
+    tmp <- esc_probdens(
+      concentrations = concentrations,
+      cqs            = cqs,
+      intercept      = params[1],
+      slope          = slope,
+      sigma          = params[3])
+
     res <- -sum(log(tmp))
   }
   return(res)
@@ -200,7 +211,11 @@ check_input_esc_mle <- function(esc_data, approximate, assumeND) {
 #'
 #' @export
 #'
-#' @example
+#' @examples
+#' esc_data = data.frame(
+#'      concentrations = c(1,1,10, 10, 100, 500, 500),
+#'      cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#' mod = esc_mle(esc_data)
 #'
 esc_mle <- function(esc_data,
                     approximate = TRUE,
@@ -219,43 +234,48 @@ esc_mle <- function(esc_data,
   # --- Naive standard curve fitting, i.e., linear regression.
   # Will also be used as initial parameter values
   # for the ESC model fit (below).
-  naive_sc <- lm(cqs ~ log(concentrations))
+  naive_sc <- stats::lm(cqs ~ log(concentrations))
 
   # --- ESC model fitting
 
-  init <- c(unname(coef(naive_sc)), sigma(naive_sc))
+  # Note:
+  # coef[1] = intercept
+  # coef[2] = slope
+  k = stats::coef(naive_sc)
 
-  res <- suppressWarnings(nlm(f = esc_log_likelihood,
-                              p = init,
-                              concentrations = concentrations,
-                              cqs = cqs,
-                              approximate = approximate))
+  # Parameterization to constraint
+  # the Efficiency between 0 and 1:
+  theta.init = theta_from_slope(min(-1.1/log10(2), k[2]))
 
-  #if slope does not exceed -1/log(2), meaning efficiency does not exceed 1,
-  #create esc object using results as is
-  if(res$estimate[2] <= -1/log(2)) {
-    m <- new_esc(intercept = res$estimate[1],
-                slope = res$estimate[2] * log(10),
-                sigma = res$estimate[3],
-                data = data.frame(concentrations = concentrations,
-                                  cqs = cqs))
-  }
-  #otherwise, force slope to be -1/log(2) and re-optimize before creating esc object
-  else {
-    res <- suppressWarnings(nlm(f = function(params){
-                                    esc_log_likelihood(c(params[1], -1/log(2), params[2]),
-                                                       concentrations = concentrations,
-                                                       cqs = cqs,
-                                                       approximate = approximate)},
-                                p = c(res$estimate[1], res$estimate[3]))
+  # initial guess for optimization
+  # Note that: init = c(intercept, theta, sigma)
+  init <- c(k[1],
+            theta.init,
+            stats::sigma(naive_sc))
 
+  res <- suppressWarnings(
+    stats::nlm(
+      f              = esc_log_likelihood,
+      p              = init,
+      concentrations = concentrations,
+      cqs            = cqs,
+      approximate    = approximate
     )
-    m <- new_esc(intercept = res$estimate[1],
-                slope = -1/log10(2),
-                sigma = res$estimate[2],
-                data = data.frame(concentrations = concentrations,
-                                  cqs = cqs))
-  }
+  )
+
+  # Extract the optimal slope from the optimal theta
+  # (theta is used in the optimization to constraint
+  # the implied Efficiency between 0 and 1)
+
+  slope = slope_from_theta(res$estimate[2])
+
+  m <- new_esc(
+    intercept = res$estimate[1],
+    slope     = slope,
+    sigma     = res$estimate[3],
+    data      = data.frame(concentrations = concentrations,
+                           cqs = cqs))
+
   return(m)
 }
 
@@ -319,22 +339,37 @@ esc_mcmc <- function(esc_data, level = 0.95) {
   concentrations <- concentrations[detects]
   cqs <- cqs[detects]
 
-  #run mcmc sampling with jags
-  results <- runjags::run.jags(system.file("jags-models", "esc-model.txt",
-                                           package = "ecurve"),
-                               data = list(n = length(cqs), cq = cqs,
-                                           conc = concentrations),
-                               monitor = c("alpha", "beta", "eff", "sigma"),
-                               thin = 4,
-                               n.chains = 2,
-                               inits = function() {
-                                 naive_sc <- lm(cqs ~ log(concentrations))
-                                 list(alpha = coef(naive_sc)[1],
-                                      eff = min(1, exp(-1/coef(naive_sc)[2]) - 1),
-                                      log2sigma = log(sigma(naive_sc), base = 2))
-                               })
 
-  #check effective sample sizes
+
+  # --- run mcmc sampling with jags
+
+
+  init_for_jags <- function(){
+
+    naive_sc <- stats::lm(cqs ~ log(concentrations))
+
+    res = list(
+      alpha     = stats::coef(naive_sc)[1],
+      eff       = min(1, exp(-1/stats::coef(naive_sc)[2]) - 1),
+      log2sigma = log(stats::sigma(naive_sc), base = 2)
+    )
+    return(res)
+  }
+
+
+  results <- runjags::run.jags(
+    model = system.file("jags-models", "esc-model.txt", package = "ecurve"),
+    data  = list(
+      n = length(cqs),
+      cq = cqs,
+      conc = concentrations),
+    monitor  = c("alpha", "beta", "eff", "sigma"),
+    thin     = 4,
+    n.chains = 2,
+    inits = init_for_jags
+  )
+
+  # check effective sample sizes
   if(any(results$summaries[,9] < 100)) {
     warning(paste0("Low effective sample sizes (less than 100) for estimates of",
                    "parametes ",
@@ -343,14 +378,20 @@ esc_mcmc <- function(esc_data, level = 0.95) {
                    ". Results may be unreliable."))
   }
 
-  #process and return results
+  # process and return results
   results <- runjags::add.summary(results, confidence = c(level))
+
   extract_int <- function(param) {
     interval <- as.list(results$summaries[param,c(1, 2, 4, 3)])
     names(interval) <- c("lower", "median", "mean", "upper")
     return(interval)
   }
-  return(list(intercept = extract_int("alpha"), slope = extract_int("beta"),
-              eff = extract_int("eff"), sigma = extract_int("sigma"),
-              mcmc_samples = results))
+
+  return(list(
+    intercept    = extract_int("alpha"),
+    slope        = extract_int("beta"),
+    eff          = extract_int("eff"),
+    sigma        = extract_int("sigma"),
+    mcmc_samples = results))
 }
+

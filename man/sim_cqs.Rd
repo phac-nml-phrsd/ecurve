@@ -16,9 +16,13 @@ sim_cqs(concentrations, eff, cq1, sigma)
 \item{sigma}{Standard Deviation of Gaussian error in Cq values}
 }
 \value{
-Numeric vector of Cq Values
+Numeric vector of Cq Values.
 }
 \description{
 Generate simulated Cq values given vector of concentrations and parameters
 for the ESC Model. Non-detects are coded as NaN
+}
+\examples{
+sim_cqs(concentrations = c(1,10,100,1000), eff = 0.97, cq1 = 40, sigma = 0.2)
+
 }

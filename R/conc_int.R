@@ -17,7 +17,6 @@
 #'
 #' @return Object of class conc_int
 #'
-#' @examples
 #'
 new_conc_int <- function(mle, interval, grid, pdf, cdf, level) {
   norm_factor <- cdf[length(cdf)]
