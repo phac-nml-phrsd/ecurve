@@ -100,10 +100,7 @@ model <- esc_mle(fit.data)
 
 The maximum likelihood estimates for the ESC model parameter are:
 ```{r MLE_results}
-model$intercept
-model$slope
-model$sigma
-model$eff
+print_esc_model(model)
 ```
 
 The model can be visualized by calling `plot_esc_model()`, which takes a fitted esc model object and produces a plot of $C_q$ value versus the log concentration. 
@@ -148,7 +145,7 @@ samp8_cqs
 Notice that sample 7 contains multiple non-detects, and sample 8 is in fact all non-detects. However, no special measures need to be taken to account for this, as the ESC model smoothly incorporates non-detects into the concentration estimation procedure. 
 Concentration estimates can be obtained using the `conc_mle()` function, which produces them using MLE given a set of $C_q$ values from technical replicates and the model fitted in the previous section:
 
-```{r, warning=FALSE}
+```{r print MLE values, warning=FALSE}
 conc_mle(samp3_cqs, model = model)
 conc_mle(samp7_cqs, model = model)
 conc_mle(samp8_cqs, model = model)
@@ -156,15 +153,18 @@ conc_mle(samp8_cqs, model = model)
 
 The function `conc_mle()` provides the "best" estimates, according to the MLE method (i.e. the parameter value that maximizes the likelihood of the data). 
 We can also quantify the uncertainty in these estimates using the `conc_interval()` function. This function uses numerical methods to compute the Bayesian posterior concentration distribution given the $C_q$ data and fitted model, assuming a uniform prior, and constructs a credible interval for the concentration. In the case of all non-detects, a one-sided credible interval is produced, while in all other cases a two-sided, equal tailed interval is used.
-The credible level of the interval can be controlled using the optional `level` parameter, which defaults to 0.95 if not specified. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration and the specified level for the interval. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval
-```{r concentration_intervals}
+The credible level of the interval can be controlled using the optional `level` parameter, which defaults to 0.95 if not specified. The function returns an object containing a list named `interval` containing the limits of the interval as well as the MLE concentration and the specified level for the interval. It also contains a data frame giving information on the posterior distribution for use in visualizing the interval.
+```{r calculate concentration intervals, warning=FALSE}
 samp3_int <- conc_interval(samp3_cqs, model = model)
 samp7_int <- conc_interval(samp7_cqs, model = model)
 samp8_int <- conc_interval(samp8_cqs, model = model)
 #Note: credible level for intervals is 95% by default
-samp3_int$interval
-samp7_int$interval
-samp8_int$interval
+```
+Let's print out the intervals:
+```{r print out intervals}
+print_esc_interval(samp3_int)
+print_esc_interval(samp7_int)
+print_esc_interval(samp8_int)
 ```
 These intervals can also be visualized using the `plot_conc_post()` function, which takes a constructed credible interval and plots either the probability density function (input parameter `type = "pdf"`) or the cumulative density function (`type = "cdf"`) of the posterior distribution of the concentration, as specified by the parameter `type`, with the MLE and interval endpoints marked. As with other visualization functions, the plot is returned as a `ggplot` object. For brevity, this is only illustrated for sample 7.
 ```{r plot_concetration_pdf, fig.width=8}
@@ -178,7 +178,7 @@ head(test.data)
 ```
 For each unique sample index, this function computes the MLE concentration estimate and lower and upper bounds of a Bayesian credible interval based on the given $C_q$ values, and packages the results into a dataframe. As with the `conc_interval()` function, there is also an optional `level` parameter to control the level of the credible intervals, with the default being 0.95.
 
-```{r, warning = FALSE}
+```{r multi_interval example, warning = FALSE}
 multi_interval(test.data, model = model)
 ```
 
