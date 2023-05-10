@@ -6,9 +6,10 @@
 #' along with the MLE estimate and the credible interval encoded
 #' in the \code{conc_int} object
 #'
-#' @param interval a \code{conc_int} object containing the concentration posterior distribution
-#' and credible interval.
-#' @param type distribution function to plot, either \code{"pdf"} or \code{"cdf"}.
+#' @param interval A \code{conc_int} object as returned by
+#' the function \code{conc_interval()} containing
+#' the concentration posterior distribution and credible interval.
+#' @param type Type of distribution function to plot, either \code{"pdf"} or \code{"cdf"}.
 #' @param title String. Title for the plot. If unspecified, defaults to "Concentration
 #' Posterior PDF" or "Concentration Posterior CDF", depending on the value of \code{type}
 #'
@@ -19,7 +20,15 @@
 #' @importFrom rlang .data
 #'
 #' @examples
-#'
+#' esc_data = data.frame(
+#' concentrations = c(1,1,10, 10, 100, 500, 500),
+#' cqs = c(40.2, 39.3, 35.9, 36.4, 32.6, 30.0, 31.1))
+#' mod = esc_mle(esc_data)
+#' new.cqs = c( 35, NaN, 36)
+#' x = conc_interval(cqs = new.cqs, model = mod)
+#' print(x$interval)
+#' plot_conc_post(interval = x, type = 'pdf')
+#' plot_conc_post(interval = x, type = 'cdf')
 #'
 plot_conc_post <- function(interval, type, title =
                             paste("Concentration Posterior", toupper(type))) {
