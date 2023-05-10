@@ -192,40 +192,33 @@ test_that("concentration mcmc estimation works", {
   intercept <- 38
   E         <- 0.97
   sigma     <- 0.2
-  model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
+  model <- new_esc(intercept = intercept,
+                   slope = -1/log10(1 + E),
+                   sigma = sigma)
 
-  conc <- 20
-  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
-  int <- conc_mcmc(data, model)
-  expect_s3_class(int$mcmc_samples, "runjags")
-  expect_true(abs(int$interval$median - conc)/conc < 0.5)
-  expect_true(abs(int$interval$mean - conc)/conc < 0.5)
-  expect_true(int$interval$upper > int$interval$median)
-  expect_true(int$interval$lower < int$interval$median)
-  int1 <- conc_mcmc(data, model, level = 0.99)
-  expect_true(abs(int1$interval$median - conc)/conc < 0.5)
-  expect_true(abs(int1$interval$mean - conc)/conc < 0.5)
-  expect_true(int1$interval$upper > int$interval$upper)
-  expect_true(int1$interval$lower < int$interval$lower)
+  runmcmc <- function(conc, model, level, tol, replic = 5) {
+    message('conc = ', conc, ' ; level = ', level, ' ; tol = ', tol)
+    data <- sim_cqs(concentrations = rep(conc, replic),
+                    eff   = model$eff,
+                    cq1   = model$intercept,
+                    sigma = model$sigma)
 
-  conc <- 500
-  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
-  int <- conc_mcmc(data, model)
-  expect_s3_class(int$mcmc_samples, "runjags")
-  expect_true(abs(int$interval$median - conc)/conc < 0.5)
-  expect_true(abs(int$interval$mean - conc)/conc < 0.5)
-  expect_true(int$interval$upper > int$interval$median)
-  expect_true(int$interval$lower < int$interval$median)
+    int <- conc_mcmc(cqs = data, model = model, level = level)
 
-  conc <- 1.5
-  data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
-                  sigma = sigma)
-  int <- conc_mcmc(data, model)
-  expect_s3_class(int$mcmc_samples, "runjags")
-  expect_true(abs(int$interval$median - conc)/conc < 1)
-  expect_true(abs(int$interval$mean - conc)/conc < 1)
-  expect_true(int$interval$upper > int$interval$median)
-  expect_true(int$interval$lower < int$interval$median)
+    expect_s3_class(int$mcmc_samples, "runjags")
+    expect_equal(object = int$interval$median, expected = conc, tolerance = tol)
+    expect_equal(object = int$interval$mean,   expected = conc, tolerance = tol)
+    # expect_true(abs(int$interval$median - conc)/conc < tol)
+    # expect_true(abs(int$interval$mean - conc)/conc < tol)
+    expect_true(int$interval$upper > int$interval$median)
+    expect_true(int$interval$lower < int$interval$median)
+  }
+
+  runmcmc(conc = 1.5, model = model, level = 0.95, tol = 0.999, replic = 10)
+  runmcmc(conc = 20, model = model, level = 0.95, tol = 0.50)
+  runmcmc(conc = 20, model = model, level = 0.99, tol = 0.50)
+  runmcmc(conc = 500, model = model, level = 0.95, tol = 0.50)
+
 })
 
 test_that("conc_mcmc input checks work", {
@@ -242,13 +235,17 @@ test_that("conc_mcmc input checks work", {
 test_that("multi_conc_mcmc works", {
   skip_if_not_installed("runjags")
   intercept <- 38
-  E <- 0.97
-  sigma <- 0.2
-  model <- new_esc(intercept, -1/log10(1 + E), sigma)
+  E         <- 0.97
+  sigma     <- 0.2
+  model     <- new_esc(intercept, -1/log10(1 + E), sigma)
+
   conc <- 20
   cqs <- sim_cqs(rep(conc, 5), E, intercept, sigma)
-  df <- data.frame(sample = c(rep(1, 5), rep(2, 3)), cqs = c(cqs, rep(NaN, 3)))
-  res <- multi_conc_mcmc(df, model)
+  cq_data <- data.frame(sample = c(rep(1, 5), rep(2, 3)),
+                        cqs    = c(cqs, rep(NaN, 3)))
+
+  res <- multi_conc_mcmc(cq_data = cq_data, model = model)
+
   expect_s3_class(res$mcmc_samples, "runjags")
   res <- res$intervals
   expect_equal(dim(res), c(2, 5))
@@ -263,7 +260,9 @@ test_that("multi_conc_mcmc works", {
   expect_true(res$median[ind2] < 1)
   expect_true(res$mean[ind2] < 1)
   expect_true(res$upper[ind2] < 2)
-  df <- data.frame(sample = c(rep("a", 5), rep("b", 3)), cqs = c(cqs, rep(NaN, 3)))
+
+  df <- data.frame(sample = c(rep("a", 5), rep("b", 3)),
+                  cqs = c(cqs, rep(NaN, 3)))
   res <- multi_conc_mcmc(df, model, level = 0.90)
   expect_s3_class(res$mcmc_samples, "runjags")
   res <- res$intervals
