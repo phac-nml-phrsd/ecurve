@@ -15,6 +15,11 @@
 #'
 print_esc_model <- function(model) {
 
+  if(!inherits(model, 'esc')){
+    warning('Not an ESC model : nothing to print.')
+    return(cat('Not an ESC model : nothing to print.'))
+  }
+
   msgdata = 'No data is attached to the model.\n\n'
   if(!is.null(model$data)){
     msgdata = paste0('Number of data points: ', nrow(model$data),'\n\n')

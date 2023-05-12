@@ -21,8 +21,8 @@
 print_esc_interval <- function(x) {
 
   if(!inherits(x, 'conc_int')){
-    message('The object is not a ESC `conc_int` object,
-            `print_esc_interval()` cannot print it')
+    cat('The object is not a ESC `conc_int` object, print_esc_interval()` cannot print it.')
+    warning('Not a `conc_int` object : nothing to print.')
     return()
   }
 
@@ -30,7 +30,6 @@ print_esc_interval <- function(x) {
   lo  = x$interval$lower
   mle = x$interval$mle
   hi  = x$interval$upper
-
 
   cat(paste0(
     '---- ESC interval ----\n\n',
