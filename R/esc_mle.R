@@ -32,13 +32,17 @@ log_likelihood_est <- function(conc, cqs, intercept, slope, sigma) {
 
   # Calculate intermediate results
   norm_dens <- sapply(N0s, function(N0){
-    stats::dnorm(cqs, mean = intercept + slope * log(N0), sd = sigma)
+    stats::dnorm(x    = cqs,
+                 mean = intercept + slope * log(N0),
+                 sd   = sigma)
   })
   pois_dens <- dpois(N0s, conc)
 
   # Calculate final log likelihood
-  res = sum(-log((norm_dens %*% pois_dens) * granularity),
-            num_non_detects * conc)
+  tmp = norm_dens %*% pois_dens
+  tmp = tmp[tmp>0]
+
+  res = sum(-log(tmp * granularity), num_non_detects * conc)
 
   return(res)
 }

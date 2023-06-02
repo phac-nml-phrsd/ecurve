@@ -111,8 +111,10 @@ conc_mle <- function(cqs, model, approximate = TRUE) {
   # --- Compute MLE
   if(approximate){
     conc_log_like <- function(conc) {
-      log_likelihood_est(conc, cqs, model$intercept, model$slope / log(10),
-                         model$sigma)
+      log_likelihood_est(conc, cqs,
+                         intercept = model$intercept,
+                         slope = model$slope / log(10),
+                         sigma = model$sigma)
     }
   }
   else {
@@ -199,9 +201,13 @@ conc_interval <- function(cqs,
     conc_log_like <- conc_log_likelihood_factory(cqs, model)
   }
 
-  mle <- suppressWarnings(stats::nlm(conc_log_like,
-                                     exp((mean(cqs, na.rm = TRUE) - model$intercept) *
-                                     log(10)/model$slope)))$estimate
+  theguess = exp((mean(cqs, na.rm = TRUE) - model$intercept) *
+                   log(10)/model$slope)
+
+  z = suppressWarnings(
+    stats::nlm(f = conc_log_like,
+               p = theguess))
+  mle = z$estimate
 
   # Compute bounds for numerical integration
   threshold <- conc_log_like(mle) + 9 * log(10)
