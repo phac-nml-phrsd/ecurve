@@ -259,7 +259,21 @@ esc_mle <- function(esc_data,
       p              = init,
       concentrations = concentrations,
       cqs            = cqs,
-      approximate    = approximate
+      approximate    = approximate,
+      # The argument `typsize` specifies the
+      # expected "size" (order of magnitude)
+      # of the solution (ie the parameter values
+      # that minimize the likelihood).
+      # In the context of qPCR, it is expected
+      # that the intercept is in the 30s/40s,
+      # that `sigma` should be around or smaller
+      # than 1. Expected value for `theta` is more
+      # uncertain, so set to "1" for lack of a
+      # better guess. The precise values of `typsize`
+      # should not matter tremendously, however
+      # setting some reasonable values should
+      # improve the robustness of the optimization.
+      typsize        = c(35, 1, 0.1)
     )
   )
 
