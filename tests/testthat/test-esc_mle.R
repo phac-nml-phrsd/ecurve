@@ -45,6 +45,35 @@ test_that("esc_mle error checks work", {
   expect_error(esc_mle(df, assumeND = "a"), "`assumeND` must be logical.")
 })
 
+test_that("esc MLE works on a specific example", {
+  # This is the example of the vignette
+  df <- data.frame(
+    concentrations = c(200, 200, 200, 100, 100, 100, 50, 50, 50, 25, 25, 25, 12.5,
+                       12.5, 12.5, 6.25, 6.25, 6.25, 3.125, 3.125, 3.125, 1.5625, 1.5625,
+                       1.5625, 1.5625, 1.5625, 1.5625, 0.7813, 0.7813, 0.3906, 0.3906,
+                       0.1953),
+    cqs = c(30.99, 30.84, 30.73, 31.98, 31.68, 31.69, 33.27, 32.83, 33.01,
+            33.51, 33.15, 33.83, 35.36, 34.64, 35.09, 36.09, 36.05, 36, 37.34,
+            36.23, 38.36, 38.22, 36.5, 37.63, 37.61, 37.17, 37.21, 36.2,
+            38.25, 39.15, 38.13, 39.17))
+
+  model <- esc_mle(df)
+
+  model.benchmark = gen_esc(
+    intercept = 38.50225,
+    eff       = 0.9951575,
+    sigma     = 0.3197636)
+
+  expect_s3_class(model, "esc")
+
+  for(p in c('intercept', 'eff', 'sigma')){
+    expect_equal(model[[p]],
+                 expected = model.benchmark[[p]],
+                 tolerance = 0.05)
+  }
+
+})
+
 test_that("esc mcmc estimation works", {
   skip_if_not_installed("runjags")
   concs <- 2^rep(seq(from = -2, to = 10), each = 3)

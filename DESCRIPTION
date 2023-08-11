@@ -1,6 +1,6 @@
 Package: ecurve
 Title: Enhanced Standard Curve Model
-Version: 0.5.2
+Version: 0.6.0
 Authors@R: c(
     person("Liam", "Kusalik", , "ltfkusaik@uwaterloo.ca", 
            role = c("aut", "cre")),
@@ -8,7 +8,7 @@ Authors@R: c(
             role = c("aut"),
             comment = c(ORCID = "0000-0002-7090-8757"))
     )
-Description: What the package does (one paragraph).
+Description: Build a hierarchical statistical model to convert Cq values from qPCR assay into conccentrations 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
