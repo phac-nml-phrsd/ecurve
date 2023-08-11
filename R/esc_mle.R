@@ -108,30 +108,29 @@ esc_log_likelihood <- function(params,
                                cqs,
                                approximate = TRUE) {
 
-  if(params[3] < 0) {return(Inf)}
-
   # Parameterization to constraint
   # the Efficiency between 0 and 1:
   slope = slope_from_theta(theta = params[2]) / log(10)
-
+  inter = mylogistic(params[1], 1, 50)
+  sigma = mylogistic(params[3], 1e-3, 10)
 
   if (approximate) {
     res <- sum( mapply(
       FUN      = log_likelihood_est,
       conc     = concentrations,
       cqs      = cqs,
-      MoreArgs = list(intercept = params[1],
+      MoreArgs = list(intercept = inter,  #params[1],
                       slope     = slope,
-                      sigma     = params[3])
+                      sigma     = sigma)
       ))
   }
   else {
     tmp <- esc_probdens(
       concentrations = concentrations,
       cqs            = cqs,
-      intercept      = params[1],
+      intercept      = inter,  #params[1],
       slope          = slope,
-      sigma          = params[3])
+      sigma          = sigma)
 
     res <- -sum(log(tmp))
   }
@@ -223,7 +222,9 @@ check_input_esc_mle <- function(esc_data, approximate, assumeND) {
 #'
 esc_mle <- function(esc_data,
                     approximate = TRUE,
-                    assumeND = TRUE) {
+                    assumeND = TRUE,
+                    nlm.print.level = 0,
+                    nlm.iterlim = 200) {
 
   # --- Inputs Checks
   chk            = check_input_esc_mle(esc_data, approximate, assumeND)
@@ -250,12 +251,14 @@ esc_mle <- function(esc_data,
   # Parameterization to constraint
   # the Efficiency between 0 and 1:
   theta.init = theta_from_slope(min(-1.1/log10(2), k[2]))
+  kappa.init = mylogistic_inverse(k[1], minvalue = 1, maxvalue = 50)
+  zeta.init  = mylogistic_inverse(stats::sigma(naive_sc), 1e-3, 10)
 
   # initial guess for optimization
   # Note that: init = c(intercept, theta, sigma)
-  init <- c(k[1],
+  init <- c(kappa.init,
             theta.init,
-            stats::sigma(naive_sc))
+            zeta.init)
 
   res <- suppressWarnings(
     stats::nlm(
@@ -277,26 +280,29 @@ esc_mle <- function(esc_data,
       # should not matter tremendously, however
       # setting some reasonable values should
       # improve the robustness of the optimization.
-      typsize        = c(35, 1, 0.1),
-      stepmax        = 0.90,  # this is a heuristic value
-      # print.level    = 2,
-      iterlim        = 500
+      # typsize        = c(3.5, 1, 0.1),
+      stepmax        = 1,  # this is a heuristic value
+      print.level    = nlm.print.level,
+      iterlim        = nlm.iterlim
     )
   )
 
   # Extract the optimal slope from the optimal theta
   # (theta is used in the optimization to constraint
-  # the implied Efficiency between 0 and 1)
+  #  the implied Efficiency between 0 and 1)
 
   slope = slope_from_theta(res$estimate[2])
+  inter = mylogistic(res$estimate[1], 1, 50)
+  sigma = mylogistic(res$estimate[3], 1e-3, 10)
 
   m <- new_esc(
-    intercept = res$estimate[1],
+    intercept = inter,
     slope     = slope,
-    sigma     = res$estimate[3],
-    data      = data.frame(concentrations = concentrations,
-                           cqs = cqs))
-
+    sigma     = sigma,
+    data      = data.frame(
+      concentrations = concentrations,
+      cqs = cqs)
+  )
   return(m)
 }
 
