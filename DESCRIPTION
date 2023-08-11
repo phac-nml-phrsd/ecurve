@@ -1,6 +1,6 @@
 Package: ecurve
 Title: Enhanced Standard Curve Model
-Version: 0.5.2
+Version: 0.5.3
 Authors@R: c(
     person("Liam", "Kusalik", , "ltfkusaik@uwaterloo.ca", 
            role = c("aut", "cre")),

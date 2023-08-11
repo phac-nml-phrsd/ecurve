@@ -278,8 +278,8 @@ esc_mle <- function(esc_data,
       # setting some reasonable values should
       # improve the robustness of the optimization.
       typsize        = c(35, 1, 0.1),
-      stepmax        = 0.1,
-      # print.level = 2,
+      stepmax        = 0.90,  # this is a heuristic value
+      # print.level    = 2,
       iterlim        = 500
     )
   )
