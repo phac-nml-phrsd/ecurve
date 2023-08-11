@@ -36,19 +36,26 @@ theta_from_slope <- function(slope) {
   return(log(tmp1/tmp2))
 }
 
+#' Logistic function.
+#'
+#' @param x Numeric
+#' @param minvalue Minimum value.
+#' @param maxvalue Maximum value.
+#'
+#' @return logistic(x)
+#'
 mylogistic <- function(x, minvalue, maxvalue) {
   return( minvalue + maxvalue / (1 + exp(-x)))
 }
 
+#' Inverse of the logistic function.
+#'
+#' @param y Numeric
+#' @param minvalue Minimum value.
+#' @param maxvalue Maximum value.
+#'
+#' @return logistic^-1(y)
+#'
 mylogistic_inverse <- function(y, minvalue, maxvalue) {
   return( -log( maxvalue / (y - minvalue) -1 )  )
 }
-
-# xx = -20:20
-# yy = sapply(xx, mylogistic, minvalue = 2, maxvalue = 35)
-# zz = sapply(yy, mylogistic_inverse, minvalue = 2, maxvalue = 35)
-#
-# check = mylogistic_inverse(mylogistic(x=xx, minvalue = 2, maxvalue = 35), minvalue = 2, maxvalue = 35)
-# plot(xx,check);abline(a=0,b=1)
-# plot(xx,yy, typ='o')
-# plot(yy,zz, typ='o')

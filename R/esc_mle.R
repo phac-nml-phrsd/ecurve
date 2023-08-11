@@ -209,6 +209,10 @@ check_input_esc_mle <- function(esc_data, approximate, assumeND) {
 #' concentrations.
 #' @param assumeND Logical. If \code{TRUE} (the default), any non numerical
 #' Cq values in the dataframe \code{esc_data} is assumed a non-detect (ND).
+#' @param nlm.print.level Integer. Display intermediary steps of
+#' the \code{nlm()} minimization (0, the default, silences print out).
+#' @param nlm.iterlim Integer. Maximum number of iterations
+#' for \code{nlm()} minimization.
 #'
 #' @return An \code{esc} object representing fitted model.
 #'
@@ -267,21 +271,14 @@ esc_mle <- function(esc_data,
       concentrations = concentrations,
       cqs            = cqs,
       approximate    = approximate,
-      # The argument `typsize` specifies the
-      # expected "size" (order of magnitude)
-      # of the solution (ie the parameter values
-      # that minimize the likelihood).
-      # In the context of qPCR, it is expected
-      # that the intercept is in the 30s/40s,
-      # that `sigma` should be around or smaller
-      # than 1. Expected value for `theta` is more
-      # uncertain, so set to "1" for lack of a
-      # better guess. The precise values of `typsize`
-      # should not matter tremendously, however
-      # setting some reasonable values should
-      # improve the robustness of the optimization.
-      # typsize        = c(3.5, 1, 0.1),
-      stepmax        = 1,  # this is a heuristic value
+      # For `stepmax` this is a heuristic value
+      # Some data sets and initial conditions
+      # generate a steep gradient during the
+      # first steps of the `nlm()` algo, so
+      # we want to limit the step size for the
+      # first iterations to avoid numerical
+      # instabilities.
+      stepmax        = 1,
       print.level    = nlm.print.level,
       iterlim        = nlm.iterlim
     )
