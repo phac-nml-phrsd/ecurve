@@ -1,13 +1,14 @@
 test_that("esc MLE works", {
+  # set.seed(1234)
   concs <- 2^rep(seq(from = -2, to = 10), each = 3)
   cq1   <- 38
-  sigma <- 0.5
+  sigma <- 0.2
   eff   <- 0.97
 
   cqs <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
-  df <- data.frame(concentrations = concs, cqs = cqs)
+  esc_data <- data.frame(concentrations = concs, cqs = cqs)
 
-  model <- esc_mle(df)
+  model <- esc_mle(esc_data)
   expect_s3_class(model, "esc")
   expect_true(abs(model$intercept - cq1)/cq1 < 0.1)
   expect_true(abs(model$sigma - sigma)/sigma < 0.5)

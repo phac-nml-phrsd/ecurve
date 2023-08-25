@@ -241,9 +241,14 @@ esc_mle <- function(esc_data,
   cqs <- cqs[detects]
 
   # --- Naive standard curve fitting, i.e., linear regression.
-  # Will also be used as initial parameter values
+  # Will be used as initial parameter values
   # for the ESC model fit (below).
-  naive_sc <- stats::lm(cqs ~ log(concentrations))
+  logconc = log10(concentrations)
+  naive_sc <- stats::lm(cqs ~ logconc)
+
+  if(nlm.print.level >0) {
+    print(naive_sc)
+  }
 
   # --- ESC model fitting
 
@@ -254,7 +259,7 @@ esc_mle <- function(esc_data,
 
   # Parameterization to constraint
   # the Efficiency between 0 and 1:
-  theta.init = theta_from_slope(min(-1.1/log10(2), k[2]))
+  theta.init = theta_from_slope(min(-1.001/log10(2), k[2]))
   kappa.init = mylogistic_inverse(k[1], minvalue = 1, maxvalue = 50)
   zeta.init  = mylogistic_inverse(stats::sigma(naive_sc), 1e-3, 10)
 
@@ -263,6 +268,12 @@ esc_mle <- function(esc_data,
   init <- c(kappa.init,
             theta.init,
             zeta.init)
+  names(init) = c('kappa', 'theta', 'zeta')
+
+  if(nlm.print.level >0) {
+    print('transformed params init:')
+    print(init)
+  }
 
   res <- suppressWarnings(
     stats::nlm(

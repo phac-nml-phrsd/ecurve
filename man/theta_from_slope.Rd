@@ -15,7 +15,7 @@ The theta parameter.
 \description{
 This is an internal function to conveniently parametrize
 the slope such that the implied efficiency is naturally
-constrainted between 0 and 1.
+constrained between 0 and 1.
 \code{Efficiency = 1 / (1 + exp(-theta))} and
 \code{slope = 1 / log10(1+Efficiency)}
 }
