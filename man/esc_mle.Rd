@@ -4,7 +4,13 @@
 \alias{esc_mle}
 \title{Fit ESC Model Using Maximum Likelihood Estimation.}
 \usage{
-esc_mle(esc_data, approximate = TRUE, assumeND = TRUE)
+esc_mle(
+  esc_data,
+  approximate = TRUE,
+  assumeND = TRUE,
+  nlm.print.level = 0,
+  nlm.iterlim = 200
+)
 }
 \arguments{
 \item{esc_data}{Data frame containing data to be used to fit the model. Must
@@ -18,6 +24,12 @@ concentrations.}
 
 \item{assumeND}{Logical. If \code{TRUE} (the default), any non numerical
 Cq values in the dataframe \code{esc_data} is assumed a non-detect (ND).}
+
+\item{nlm.print.level}{Integer. Display intermediary steps of
+the \code{nlm()} minimization (0, the default, silences print out).}
+
+\item{nlm.iterlim}{Integer. Maximum number of iterations
+for \code{nlm()} minimization.}
 }
 \value{
 An \code{esc} object representing fitted model.

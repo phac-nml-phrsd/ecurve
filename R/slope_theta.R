@@ -21,7 +21,7 @@ slope_from_theta <- function(theta) {
 #'
 #' @description This is an internal function to conveniently parametrize
 #' the slope such that the implied efficiency is naturally
-#' constrainted between 0 and 1.
+#' constrained between 0 and 1.
 #' `Efficiency = 1 / (1 + exp(-theta))` and
 #'  `slope = 1 / log10(1+Efficiency)`
 #'
