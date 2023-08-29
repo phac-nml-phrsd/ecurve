@@ -257,10 +257,22 @@ esc_mle <- function(esc_data,
   # coef[2] = slope
   k = stats::coef(naive_sc)
 
+  # DEBUG
+  plot(x=logconc, y=cqs, las=1) ; grid()
+  abline(a = k[1], b = k[2])
+
   # Parameterization to constraint
   # the Efficiency between 0 and 1:
   theta.init = theta_from_slope(min(-1.001/log10(2), k[2]))
-  kappa.init = mylogistic_inverse(k[1], minvalue = 1, maxvalue = 50)
+
+  # Tue Aug 29 08:19:31 2023 ------------------------------
+  # STOPPED HERE
+  # the initialization for `kappa` (and maybe others)
+  # is causing instabilities in the nlm() function.
+  # The `lm()` model above is fine, so that's really
+  # at this step the instability is introduced...
+
+  kappa.init = mylogistic_inverse(k[1], minvalue = 10, maxvalue = 40)
   zeta.init  = mylogistic_inverse(stats::sigma(naive_sc), 1e-3, 10)
 
   # initial guess for optimization
