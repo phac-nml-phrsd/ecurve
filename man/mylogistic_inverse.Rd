@@ -4,7 +4,7 @@
 \alias{mylogistic_inverse}
 \title{Inverse of the logistic function.}
 \usage{
-mylogistic_inverse(y, minvalue, maxvalue)
+mylogistic_inverse(y, minvalue, maxvalue, shallowness = 25)
 }
 \arguments{
 \item{y}{Numeric}
@@ -12,6 +12,8 @@ mylogistic_inverse(y, minvalue, maxvalue)
 \item{minvalue}{Minimum value.}
 
 \item{maxvalue}{Maximum value.}
+
+\item{shallowness}{Numeric. Determines how steep the logistic function is.}
 }
 \value{
 logistic^-1(y)

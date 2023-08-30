@@ -4,7 +4,7 @@
 \alias{mylogistic}
 \title{Logistic function.}
 \usage{
-mylogistic(x, minvalue, maxvalue)
+mylogistic(x, minvalue, maxvalue, shallowness = 25)
 }
 \arguments{
 \item{x}{Numeric}
@@ -12,6 +12,8 @@ mylogistic(x, minvalue, maxvalue)
 \item{minvalue}{Minimum value.}
 
 \item{maxvalue}{Maximum value.}
+
+\item{shallowness}{Numeric. Determines how steep the logistic function is.}
 }
 \value{
 logistic(x)

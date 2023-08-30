@@ -5,12 +5,16 @@
 \title{Calculate the slope using theta.}
 \usage{
 slope_from_theta(theta)
+
+slope_from_theta(theta)
 }
 \arguments{
-\item{theta}{Numeric.}
+\item{theta}{}
 }
 \value{
 The slope parameter.
+
+Numeric. The slope.
 }
 \description{
 This is an internal function to conveniently parametrize
