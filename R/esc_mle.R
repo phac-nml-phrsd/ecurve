@@ -122,7 +122,7 @@ esc_log_likelihood <- function(params,
       MoreArgs = list(intercept = inter,  #params[1],
                       slope     = slope,
                       sigma     = sigma)
-      ))
+    ))
   }
   else {
     tmp <- esc_probdens(
@@ -255,25 +255,31 @@ esc_mle <- function(esc_data,
   # Note:
   # coef[1] = intercept
   # coef[2] = slope
-  k = stats::coef(naive_sc)
+  k        = stats::coef(naive_sc)
+  sigmareg = stats::sigma(naive_sc)
 
   # DEBUG
   plot(x=logconc, y=cqs, las=1) ; grid()
   abline(a = k[1], b = k[2])
 
-  # Parameterization to constraint
-  # the Efficiency between 0 and 1:
+  # Parameterization to reflect constraints
+  inter.min = 10
+  inter.max = 60
+  sigma.min = 1e-3
+  sigma.max = 10
   theta.init = theta_from_slope(min(-1.001/log10(2), k[2]))
+  kappa.init = mylogistic_inverse(k[1], minvalue = inter.min, maxvalue = inter.max)
+  zeta.init  = mylogistic_inverse(sigmareg, sigma.min, sigma.max)
 
-  # Tue Aug 29 08:19:31 2023 ------------------------------
-  # STOPPED HERE
-  # the initialization for `kappa` (and maybe others)
-  # is causing instabilities in the nlm() function.
-  # The `lm()` model above is fine, so that's really
-  # at this step the instability is introduced...
-
-  kappa.init = mylogistic_inverse(k[1], minvalue = 10, maxvalue = 40)
-  zeta.init  = mylogistic_inverse(stats::sigma(naive_sc), 1e-3, 10)
+  if(nlm.print.level >0) {
+    k1.chk       = mylogistic(kappa.init, minvalue = inter.min, maxvalue = inter.max)
+    sigmareg.chk = mylogistic(zeta.init, minvalue = sigma.min, maxvalue = sigma.max)
+    k2.chk       = slope_from_theta(theta.init)
+    print('check reparameterization (linear reg. / init guess:')
+    print(paste('slope    : ', k[2], '/', k2.chk))
+    print(paste('intercept: ', k[1], '/', k1.chk))
+    print(paste('sigma    : ', sigmareg, '/', sigmareg.chk))
+  }
 
   # initial guess for optimization
   # Note that: init = c(intercept, theta, sigma)
@@ -301,7 +307,7 @@ esc_mle <- function(esc_data,
       # we want to limit the step size for the
       # first iterations to avoid numerical
       # instabilities.
-      stepmax        = 1,
+      stepmax        = 0.2,
       print.level    = nlm.print.level,
       iterlim        = nlm.iterlim
     )
@@ -312,8 +318,8 @@ esc_mle <- function(esc_data,
   #  the implied Efficiency between 0 and 1)
 
   slope = slope_from_theta(res$estimate[2])
-  inter = mylogistic(res$estimate[1], 1, 50)
-  sigma = mylogistic(res$estimate[3], 1e-3, 10)
+  inter = mylogistic(res$estimate[1], inter.min, inter.max)
+  sigma = mylogistic(res$estimate[3], sigma.min, sigma.max)
 
   m <- new_esc(
     intercept = inter,
