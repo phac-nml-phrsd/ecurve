@@ -258,15 +258,17 @@ esc_mle <- function(esc_data,
   k        = stats::coef(naive_sc)
   sigmareg = stats::sigma(naive_sc)
 
-  # DEBUG
-  plot(x=logconc, y=cqs, las=1) ; grid()
-  abline(a = k[1], b = k[2])
-
+  if(nlm.print.level >0) {
+    plot(x=logconc, y=cqs, las=1,
+         main = 'naive linear regression for initial values')
+    grid()
+    abline(a = k[1], b = k[2])
+  }
   # Parameterization to reflect constraints
   inter.min = 10
   inter.max = 60
   sigma.min = 1e-3
-  sigma.max = 10
+  sigma.max = 2
   theta.init = theta_from_slope(min(-1.001/log10(2), k[2]))
   kappa.init = mylogistic_inverse(k[1], minvalue = inter.min, maxvalue = inter.max)
   zeta.init  = mylogistic_inverse(sigmareg, sigma.min, sigma.max)
@@ -307,7 +309,7 @@ esc_mle <- function(esc_data,
       # we want to limit the step size for the
       # first iterations to avoid numerical
       # instabilities.
-      stepmax        = 0.2,
+      stepmax        = 0.4,
       print.level    = nlm.print.level,
       iterlim        = nlm.iterlim
     )
