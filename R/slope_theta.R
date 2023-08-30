@@ -36,16 +36,30 @@ theta_from_slope <- function(slope) {
   return(log(tmp1/tmp2))
 }
 
+
+#' Calculate the regression slope from theta
+#'
+#' @param theta
+#'
+#' @return Numeric. The slope.
+
+slope_from_theta <- function(theta) {
+  eff = 1 / (1 + exp(-theta))
+  slope = -1 / log10(1 + eff)
+  return(slope)
+}
+
 #' Logistic function.
 #'
 #' @param x Numeric
 #' @param minvalue Minimum value.
 #' @param maxvalue Maximum value.
+#' @param shallowness Numeric. Determines how steep the logistic function is.
 #'
 #' @return logistic(x)
 #'
-mylogistic <- function(x, minvalue, maxvalue) {
-  return( minvalue + maxvalue / (1 + exp(-x)))
+mylogistic <- function(x, minvalue, maxvalue, shallowness = 25) {
+  return( minvalue + (maxvalue - minvalue) / (1 + exp(-x/shallowness)))
 }
 
 #' Inverse of the logistic function.
@@ -53,9 +67,27 @@ mylogistic <- function(x, minvalue, maxvalue) {
 #' @param y Numeric
 #' @param minvalue Minimum value.
 #' @param maxvalue Maximum value.
+#' @param shallowness Numeric. Determines how steep the logistic function is.
 #'
 #' @return logistic^-1(y)
 #'
-mylogistic_inverse <- function(y, minvalue, maxvalue) {
-  return( -log( maxvalue / (y - minvalue) -1 )  )
+mylogistic_inverse <- function(y, minvalue, maxvalue, shallowness = 25) {
+  return( -log( (maxvalue - minvalue) / (y - minvalue) -1 ) * shallowness  )
 }
+
+
+if(0){
+
+  minvalue = 10
+  maxvalue = 60
+  x = seq(minvalue - 5,maxvalue+5,by=0.2)
+  y = mylogistic_inverse(x,minvalue,maxvalue)
+  z = mylogistic(y,minvalue,maxvalue)
+  par(mfrow=c(1,3))
+  plot(x,z) ; abline(0,1, col='red')
+  plot(x,y,typ='l') ; grid()
+  plot(y,z,typ='l') ; grid()
+
+}
+
+

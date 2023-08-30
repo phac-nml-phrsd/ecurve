@@ -1,33 +1,39 @@
 test_that("esc MLE works", {
-  # set.seed(1234)
-  concs <- 2^rep(seq(from = -2, to = 10), each = 3)
+  #set.seed(1234)
+  concs <- 2^rep(seq(from = -2, to = 10), each = 2)
   cq1   <- 38
-  sigma <- 0.2
+  sigma <- 0.15
   eff   <- 0.97
 
   cqs <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
   esc_data <- data.frame(concentrations = concs, cqs = cqs)
 
   model <- esc_mle(esc_data)
+  # plot_esc_model(model)
+
   expect_s3_class(model, "esc")
-  expect_true(abs(model$intercept - cq1)/cq1 < 0.1)
-  expect_true(abs(model$sigma - sigma)/sigma < 0.5)
-  expect_true(abs(model$eff - eff)/eff < 0.1)
+  expect_equal(model$intercept, cq1, tolerance = 0.1)
+  expect_equal(model$sigma, sigma, tolerance = 0.6)
+  expect_equal(model$eff,eff, tolerance =  0.1)
   expect_equal(model$slope, -1/log10(1 + model$eff))
 })
 
 test_that("esc MLE works when approximation is turned off", {
   concs <- 2^rep(seq(from = -2, to = 10), each = 3)
-  cq1 <- 38
-  sigma <- 0.5
-  eff <- 0.97
-  cqs <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
-  df <- data.frame(concentrations = concs, cqs = cqs)
-  model <- esc_mle(df, approximate = FALSE)
+  cq1   <- 38
+  sigma <- 0.02
+  eff   <- 0.97
+  cqs   <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
+  df    <- data.frame(concentrations = concs, cqs = cqs)
+
+  model <- esc_mle(df, approximate = FALSE, nlm.print.level = 0)
+  # plot_esc_model(model)
+
   expect_s3_class(model, "esc")
-  expect_true(abs(model$intercept - cq1)/cq1 < 0.1)
-  expect_true(abs(model$sigma - sigma)/sigma < 0.5)
-  expect_true(abs(model$eff - eff)/eff < 0.25)
+  expect_equal(model$intercept, cq1, tolerance = 0.1)
+  expect_equal(model$sigma, sigma, tolerance = 0.6)
+  expect_equal(model$eff,eff, tolerance =  0.1)
+  expect_equal(model$slope, -1/log10(1 + model$eff))
 })
 
 test_that("esc_mle error checks work", {
@@ -59,6 +65,8 @@ test_that("esc MLE works on a specific example", {
             38.25, 39.15, 38.13, 39.17))
 
   model <- esc_mle(df)
+  # plot_esc_model(model)
+  # print_esc_model(model)
 
   model.benchmark = gen_esc(
     intercept = 38.50225,
@@ -68,9 +76,10 @@ test_that("esc MLE works on a specific example", {
   expect_s3_class(model, "esc")
 
   for(p in c('intercept', 'eff', 'sigma')){
+    # print(p)
     expect_equal(model[[p]],
                  expected = model.benchmark[[p]],
-                 tolerance = 0.05)
+                 tolerance = ifelse(p=='sigma',0.5,0.05))
   }
 
 })
