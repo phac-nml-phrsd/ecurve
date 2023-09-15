@@ -309,7 +309,7 @@ esc_mle <- function(esc_data,
       # we want to limit the step size for the
       # first iterations to avoid numerical
       # instabilities.
-      stepmax        = 0.4,
+      stepmax        = 0.02,
       print.level    = nlm.print.level,
       iterlim        = nlm.iterlim
     )
