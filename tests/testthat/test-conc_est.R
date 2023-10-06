@@ -50,19 +50,22 @@ test_that("concentration interval estimation works", {
 
 test_that("concentration MLE works when approximation is turned off", {
   intercept <- 38
-  E <- 0.97
-  sigma <- 0.2
-  model <- new_esc(intercept = intercept, slope = -1/log10(1 + E), sigma = sigma)
-  conc <- 20
-  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
-  expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 0.5)
-  conc <- 500
-  data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
-  expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 0.5)
-  conc <- 1.5
-  data <- sim_cqs(rep(conc, 10), eff = E, cq1 = intercept,
-                  sigma = sigma)
-  expect_true(abs(conc_mle(data, model, approximate = FALSE) - conc)/conc < 1)
+  E         <- 0.97
+  sigma     <- 0.2
+  model     <- new_esc(intercept = intercept,
+                       slope = -1/log10(1 + E),
+                       sigma = sigma)
+  tol = 0.50
+
+  tmp_approx_off <- function(conc, model, tol) {
+    data <- sim_cqs(rep(conc, 5), eff = E, cq1 = intercept, sigma = sigma)
+    m = conc_mle(data, model, approximate = FALSE)
+    expect_equal(m, conc, tolerance = 0.50)
+  }
+
+  for(conc in c(5, 20, 500)){
+    tmp_approx_off(conc, model, tol)
+  }
 })
 
 test_that("concentration interval estimation works when approximation is turned off", {
