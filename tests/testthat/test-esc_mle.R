@@ -1,8 +1,8 @@
 test_that("esc MLE works", {
-  #set.seed(1234)
+
   concs <- 2^rep(seq(from = -2, to = 10), each = 2)
-  cq1   <- 38
-  sigma <- 0.15
+  cq1   <- 39
+  sigma <- 0.10
   eff   <- 0.97
 
   cqs <- sim_cqs(concs, cq1 = cq1, eff = eff, sigma = sigma)
