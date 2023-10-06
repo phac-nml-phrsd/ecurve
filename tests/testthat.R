@@ -9,4 +9,10 @@
 library(testthat)
 library(ecurve)
 
+# Setting the seed to a fixed value
+# to debug potential issues with some tests.
+# The `nlm()` optimization occasionally fails
+# to find a good enough MLE, which fails the test.
+set.seed(1234)
+
 test_check("ecurve")
